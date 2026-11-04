@@ -58,7 +58,7 @@ import com.example.agrostock.ui.theme.AgroTextPrimary
 import com.example.agrostock.ui.theme.AgroTextSecondary
 
 /**
- * Screen 1: Acceso Rápido (RUT y PINVacíos e Interactivos)
+ * Screen 1: Acceso Rápido (RUT limitado a 10 caracteres y PIN de 6 dígitos)
  * Matching Mockup 1 from Image 2
  */
 @Composable
@@ -149,14 +149,19 @@ fun LoginPinScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Editable RUT Input Field (Dark Text)
+                // Editable RUT Input Field (Restricted to max 12 formatted chars / 10 raw alphanumeric chars, e.g.: 12.345.678-9)
                 OutlinedTextField(
                     value = rutInput,
-                    onValueChange = { rutInput = it },
+                    onValueChange = { input ->
+                        val clean = input.filter { it.isLetterOrDigit() || it == '-' || it == '.' }
+                        if (clean.length <= 12) {
+                            rutInput = clean
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth(0.90f)
                         .height(52.dp),
-                    placeholder = { Text("Ingresar RUT (ej: 14.821.903-K)", fontSize = 13.sp, color = AgroTextMuted) },
+                    placeholder = { Text("Ej: 12.345.678-9", fontSize = 13.sp, color = AgroTextMuted) },
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Default.Person,
@@ -249,7 +254,7 @@ fun LoginPinScreen(
                                                     // Auto submit when 6th digit typed
                                                     if (pinInput.length == 6) {
                                                         onLoginSuccess(
-                                                            if (rutInput.isBlank()) "14.821.903-K" else rutInput,
+                                                            if (rutInput.isBlank()) "12.345.678-9" else rutInput,
                                                             pinInput
                                                         )
                                                     }
@@ -269,7 +274,7 @@ fun LoginPinScreen(
                 Button(
                     onClick = {
                         onLoginSuccess(
-                            if (rutInput.isBlank()) "14.821.903-K" else rutInput,
+                            if (rutInput.isBlank()) "12.345.678-9" else rutInput,
                             if (pinInput.isBlank()) "123456" else pinInput
                         )
                     },
