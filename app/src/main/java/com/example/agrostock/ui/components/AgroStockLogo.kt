@@ -1,10 +1,12 @@
 package com.example.agrostock.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -32,15 +34,15 @@ import com.example.agrostock.ui.theme.AgroRedControlled
 import com.example.agrostock.ui.theme.AgroTextPrimary
 
 /**
- * AgroStock Branding Logo Composable matching Image 1:
- * - Lush green tree with leaves
- * - Stylized "AgroStock" text with red apple for 'o'
- * - Resting Holstein cow under the tree
+ * High-fidelity AgroStock Branding Logo Composable matching Image 1:
+ * - Lush green tree with arching leafy branches
+ * - Stylized "AgroStock" typography with red apple for 'o'
+ * - Resting Holstein cow with black/white patches under the tree
  */
 @Composable
 fun AgroStockLogo(
     modifier: Modifier = Modifier,
-    logoSize: Dp = 140.dp,
+    logoSize: Dp = 150.dp,
     compact: Boolean = false
 ) {
     if (compact) {
@@ -48,17 +50,15 @@ fun AgroStockLogo(
             modifier = modifier,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Small Tree Graphic
             Canvas(modifier = Modifier.size(28.dp)) {
                 val cWidth = this.size.width
                 val cHeight = this.size.height
                 val green = Color(0xFF4CAF50)
                 val darkGreen = Color(0xFF2E7D32)
-                
-                // Leaves cluster
+
                 drawCircle(color = green, radius = cWidth * 0.35f, center = Offset(cWidth * 0.4f, cHeight * 0.4f))
                 drawCircle(color = darkGreen, radius = cWidth * 0.25f, center = Offset(cWidth * 0.6f, cHeight * 0.3f))
-                // Trunk
+
                 val path = Path().apply {
                     moveTo(cWidth * 0.35f, cHeight * 0.85f)
                     quadraticTo(cWidth * 0.35f, cHeight * 0.5f, cWidth * 0.45f, cHeight * 0.35f)
@@ -78,113 +78,124 @@ fun AgroStockLogo(
         ) {
             Box(
                 modifier = Modifier
-                    .width(logoSize * 1.8f)
+                    .width(logoSize * 2.2f)
                     .height(logoSize),
                 contentAlignment = Alignment.Center
             ) {
-                // Drawing Tree, Cow, and AgroStock Text according to Image 1
                 Canvas(modifier = Modifier.matchParentSize()) {
-                    val width = this.size.width
-                    val height = this.size.height
+                    val w = this.size.width
+                    val h = this.size.height
 
-                    val greenTree = Color(0xFF4C9A2A)
-                    val darkGreenTree = Color(0xFF2D6A1F)
-                    val trunkColor = Color(0xFF388E3C)
-                    val groundColor = Color(0xFFDCEDC8)
-                    val cowWhite = Color(0xFFFAFAFA)
-                    val cowBlack = Color(0xFF212121)
+                    val leafGreen = Color(0xFF558B2F)
+                    val leafDarkGreen = Color(0xFF33691E)
+                    val trunkColor = Color(0xFF2E7D32)
+                    val grassColor = Color(0xFFE8F5E9)
+                    val cowWhite = Color(0xFFFFFFFF)
+                    val cowBlack = Color(0xFF1E1E1E)
                     val cowPink = Color(0xFFFFCDD2)
 
-                    // Ground shadow
+                    // 1. Light Grass Shadow Oval beneath cow and tree
                     drawOval(
-                        color = groundColor,
-                        topLeft = Offset(width * 0.32f, height * 0.82f),
-                        size = Size(width * 0.55f, height * 0.12f)
+                        color = grassColor,
+                        topLeft = Offset(w * 0.30f, h * 0.80f),
+                        size = Size(w * 0.58f, h * 0.14f)
                     )
 
-                    // Tree Trunk curved into 'A'
+                    // 2. Curving Tree Trunk on the left side
                     val trunkPath = Path().apply {
-                        moveTo(width * 0.3f, height * 0.82f)
+                        moveTo(w * 0.28f, h * 0.85f)
                         cubicTo(
-                            width * 0.38f, height * 0.78f,
-                            width * 0.42f, height * 0.62f,
-                            width * 0.42f, height * 0.45f
+                            w * 0.34f, h * 0.80f,
+                            w * 0.38f, h * 0.65f,
+                            w * 0.38f, h * 0.48f
                         )
                         cubicTo(
-                            width * 0.42f, height * 0.35f,
-                            width * 0.45f, height * 0.28f,
-                            width * 0.48f, height * 0.22f
+                            w * 0.38f, h * 0.36f,
+                            w * 0.42f, h * 0.28f,
+                            w * 0.45f, h * 0.22f
                         )
                         cubicTo(
-                            width * 0.45f, height * 0.32f,
-                            width * 0.39f, height * 0.48f,
-                            width * 0.36f, height * 0.65f
+                            w * 0.42f, h * 0.32f,
+                            w * 0.35f, h * 0.50f,
+                            w * 0.32f, h * 0.68f
                         )
                         cubicTo(
-                            width * 0.34f, height * 0.75f,
-                            width * 0.26f, height * 0.82f,
-                            width * 0.24f, height * 0.83f
+                            w * 0.30f, h * 0.78f,
+                            w * 0.22f, h * 0.83f,
+                            w * 0.20f, h * 0.85f
                         )
                         close()
                     }
                     drawPath(trunkPath, color = trunkColor)
 
-                    // Tree Leaves Branches (Arc of green foliage)
-                    val leafCenters = listOf(
-                        Offset(width * 0.18f, height * 0.50f) to 22.dp.toPx(),
-                        Offset(width * 0.14f, height * 0.38f) to 26.dp.toPx(),
-                        Offset(width * 0.22f, height * 0.28f) to 30.dp.toPx(),
-                        Offset(width * 0.32f, height * 0.20f) to 34.dp.toPx(),
-                        Offset(width * 0.44f, height * 0.18f) to 32.dp.toPx(),
-                        Offset(width * 0.54f, height * 0.24f) to 28.dp.toPx(),
-                        Offset(width * 0.62f, height * 0.34f) to 22.dp.toPx(),
-                        Offset(width * 0.28f, height * 0.38f) to 36.dp.toPx(),
-                        Offset(width * 0.38f, height * 0.30f) to 38.dp.toPx(),
-                        Offset(width * 0.48f, height * 0.32f) to 30.dp.toPx()
+                    // 3. Tree Leaves Arch over the left & top
+                    val leaves = listOf(
+                        Offset(w * 0.12f, h * 0.52f) to 18.dp.toPx(),
+                        Offset(w * 0.10f, h * 0.40f) to 22.dp.toPx(),
+                        Offset(w * 0.16f, h * 0.28f) to 26.dp.toPx(),
+                        Offset(w * 0.26f, h * 0.18f) to 30.dp.toPx(),
+                        Offset(w * 0.38f, h * 0.15f) to 28.dp.toPx(),
+                        Offset(w * 0.48f, h * 0.18f) to 24.dp.toPx(),
+                        Offset(w * 0.22f, h * 0.38f) to 32.dp.toPx(),
+                        Offset(w * 0.30f, h * 0.28f) to 34.dp.toPx(),
+                        Offset(w * 0.40f, h * 0.25f) to 26.dp.toPx()
                     )
 
-                    leafCenters.forEachIndexed { idx, (center, r) ->
-                        val c = if (idx % 2 == 0) greenTree else darkGreenTree
-                        drawCircle(color = c, radius = r, center = center)
+                    leaves.forEachIndexed { i, (center, radius) ->
+                        val color = if (i % 2 == 0) leafGreen else leafDarkGreen
+                        drawCircle(color = color, radius = radius, center = center)
                     }
 
-                    // Cow resting under tree
-                    val cowCenterX = width * 0.60f
-                    val cowCenterY = height * 0.72f
+                    // 4. Detailed Holstein Cow sitting under tree
+                    val cowX = w * 0.58f
+                    val cowY = h * 0.72f
 
-                    // Cow Body (White oval)
+                    // Cow Body (White)
                     drawOval(
                         color = cowWhite,
-                        topLeft = Offset(cowCenterX - 34.dp.toPx(), cowCenterY - 14.dp.toPx()),
-                        size = Size(68.dp.toPx(), 28.dp.toPx())
+                        topLeft = Offset(cowX - 32.dp.toPx(), cowY - 12.dp.toPx()),
+                        size = Size(64.dp.toPx(), 26.dp.toPx())
                     )
                     drawOval(
                         color = cowBlack,
-                        topLeft = Offset(cowCenterX - 34.dp.toPx(), cowCenterY - 14.dp.toPx()),
-                        size = Size(68.dp.toPx(), 28.dp.toPx()),
-                        style = Stroke(width = 1.5.dp.toPx())
+                        topLeft = Offset(cowX - 32.dp.toPx(), cowY - 12.dp.toPx()),
+                        size = Size(64.dp.toPx(), 26.dp.toPx()),
+                        style = Stroke(width = 1.2.dp.toPx())
                     )
 
-                    // Cow Black Spots
-                    drawCircle(color = cowBlack, radius = 9.dp.toPx(), center = Offset(cowCenterX - 10.dp.toPx(), cowCenterY - 2.dp.toPx()))
-                    drawCircle(color = cowBlack, radius = 12.dp.toPx(), center = Offset(cowCenterX + 12.dp.toPx(), cowCenterY - 4.dp.toPx()))
+                    // Cow Black Patches
+                    drawCircle(color = cowBlack, radius = 8.dp.toPx(), center = Offset(cowX - 12.dp.toPx(), cowY - 2.dp.toPx()))
+                    drawCircle(color = cowBlack, radius = 10.dp.toPx(), center = Offset(cowX + 10.dp.toPx(), cowY - 4.dp.toPx()))
 
-                    // Cow Head
-                    val headX = cowCenterX + 22.dp.toPx()
-                    val headY = cowCenterY - 10.dp.toPx()
-                    drawCircle(color = cowWhite, radius = 11.dp.toPx(), center = Offset(headX, headY))
-                    drawCircle(color = cowBlack, radius = 11.dp.toPx(), center = Offset(headX, headY), style = Stroke(width = 1.5.dp.toPx()))
-                    // Head spot
-                    drawCircle(color = cowBlack, radius = 5.dp.toPx(), center = Offset(headX - 3.dp.toPx(), headY - 4.dp.toPx()))
-                    // Snout pink
-                    drawCircle(color = cowPink, radius = 5.dp.toPx(), center = Offset(headX + 8.dp.toPx(), headY + 2.dp.toPx()))
+                    // Cow Head & Ears
+                    val headX = cowX + 22.dp.toPx()
+                    val headY = cowY - 10.dp.toPx()
+
+                    // Head base
+                    drawCircle(color = cowWhite, radius = 10.dp.toPx(), center = Offset(headX, headY))
+                    drawCircle(color = cowBlack, radius = 10.dp.toPx(), center = Offset(headX, headY), style = Stroke(width = 1.2.dp.toPx()))
+                    // Head patch
+                    drawCircle(color = cowBlack, radius = 4.dp.toPx(), center = Offset(headX - 2.dp.toPx(), headY - 4.dp.toPx()))
+                    // Pink Snout
+                    drawOval(
+                        color = cowPink,
+                        topLeft = Offset(headX + 4.dp.toPx(), headY - 2.dp.toPx()),
+                        size = Size(9.dp.toPx(), 7.dp.toPx())
+                    )
+                    drawOval(
+                        color = cowBlack,
+                        topLeft = Offset(headX + 4.dp.toPx(), headY - 2.dp.toPx()),
+                        size = Size(9.dp.toPx(), 7.dp.toPx()),
+                        style = Stroke(width = 0.8.dp.toPx())
+                    )
                 }
 
-                // Text Overlay: AgroStock
-                Column(
+                // 5. High-Contrast Typography Row on the Right Side
+                Row(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
-                        .padding(end = 12.dp, bottom = 28.dp)
+                        .padding(end = 4.dp, bottom = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     AgroStockText(fontSize = 32.sp)
                 }
@@ -223,7 +234,7 @@ fun AgroStockText(
             },
             fontSize = fontSize
         )
-        // Apple for 'o'
+        // Red Apple Icon
         Box(
             modifier = Modifier.padding(horizontal = 1.dp),
             contentAlignment = Alignment.TopCenter
@@ -232,13 +243,13 @@ fun AgroStockText(
                 val cWidth = this.size.width
                 val cHeight = this.size.height
 
-                // Red Apple Body
+                // Red Apple
                 drawCircle(
                     color = AgroRedControlled,
                     radius = cWidth * 0.42f,
                     center = Offset(cWidth * 0.5f, cHeight * 0.58f)
                 )
-                // Small Green Leaf on Apple
+                // Green Leaf
                 val leafPath = Path().apply {
                     moveTo(cWidth * 0.5f, cHeight * 0.2f)
                     quadraticTo(cWidth * 0.7f, cHeight * 0.1f, cWidth * 0.8f, cHeight * 0.3f)

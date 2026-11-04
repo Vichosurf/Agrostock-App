@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -74,90 +76,106 @@ fun AgroStockMainApp() {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            // Top Demo Navigator Bar allowing direct inspection of all 4 mockups
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF1E293B),
-                shadowElevation = 4.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 8.dp, top = 28.dp, bottom = 6.dp)
+            // ONLY show the top bar when logged in (not in LOGIN screen)
+            if (currentScreen != AgroScreen.LOGIN) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color(0xFF1E293B),
+                    shadowElevation = 4.dp
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 8.dp, end = 8.dp, top = 28.dp, bottom = 6.dp)
                     ) {
-                        Text(
-                            text = "AgroStock - Maquetas",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
-                            modifier = Modifier.padding(start = 6.dp)
-                        )
-
-                        // Online / Offline Switch
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(end = 4.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = if (isOnlineMode) Icons.Default.Wifi else Icons.Default.WifiOff,
-                                contentDescription = "Mode",
-                                tint = if (isOnlineMode) Color(0xFF4CAF50) else AgroOfflineOrange,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (isOnlineMode) "ONLINE" else "OFFLINE",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isOnlineMode) Color(0xFF81C784) else AgroOfflineYellow
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Switch(
-                                checked = isOnlineMode,
-                                onCheckedChange = { isOnlineMode = it },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = AgroGreenPrimary,
-                                    uncheckedThumbColor = Color.White,
-                                    uncheckedTrackColor = AgroOfflineOrange
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "AgroStock - Maquetas",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(start = 6.dp)
                                 )
-                            )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                IconButton(
+                                    onClick = { currentScreen = AgroScreen.LOGIN },
+                                    modifier = Modifier.size(22.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ExitToApp,
+                                        contentDescription = "Cerrar sesión",
+                                        tint = Color.White.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            // Online / Offline Switch
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(end = 4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isOnlineMode) Icons.Default.Wifi else Icons.Default.WifiOff,
+                                    contentDescription = "Mode",
+                                    tint = if (isOnlineMode) Color(0xFF4CAF50) else AgroOfflineOrange,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isOnlineMode) "ONLINE" else "OFFLINE",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isOnlineMode) Color(0xFF81C784) else AgroOfflineYellow
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Switch(
+                                    checked = isOnlineMode,
+                                    onCheckedChange = { isOnlineMode = it },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = AgroGreenPrimary,
+                                        uncheckedThumbColor = Color.White,
+                                        uncheckedTrackColor = AgroOfflineOrange
+                                    )
+                                )
+                            }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                    // 4 Screen Tabs
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        AgroScreen.entries.forEach { screen ->
-                            val isSelected = currentScreen == screen
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
+                        // Navigation Tabs for logged in screens (Retiro DIIO, Catálogo, Cola Envíos)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            listOf(AgroScreen.RETIRO, AgroScreen.CATALOGO, AgroScreen.COLA_SYNC).forEach { screen ->
+                                val isSelected = currentScreen == screen
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
                                     .height(30.dp)
                                     .clip(RoundedCornerShape(6.dp))
                                     .clickable { currentScreen = screen },
-                                color = if (isSelected) AgroGreenPrimary else Color(0xFF334155),
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
+                                    color = if (isSelected) AgroGreenPrimary else Color(0xFF334155),
+                                    shape = RoundedCornerShape(6.dp)
                                 ) {
-                                    Text(
-                                        text = screen.label,
-                                        fontSize = 10.sp,
-                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else Color(0xFFCBD5E1)
-                                    )
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Text(
+                                            text = screen.label,
+                                            fontSize = 10.sp,
+                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                            color = if (isSelected) Color.White else Color(0xFFCBD5E1)
+                                        )
+                                    }
                                 }
                             }
                         }
