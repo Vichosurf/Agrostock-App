@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Ground shadow for Cow and Tree -->
+    <path
+        android:fillColor="#DCEDC8"
+        android:pathData="M32,82 C42,78 68,78 78,82 C68,86 42,86 32,82 Z" />
+
+    <!-- Tree Trunk curved into A -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M30,80 C36,76 42,60 42,46 C42,36 45,30 48,24 C45,33 39,48 36,65 C34,74 26,80 24,81 Z" />
+
+    <!-- Tree Canopy Leaf Clusters -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M22,50 A12,12 0 1,1 22,49.9 Z" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M20,38 A14,14 0 1,1 20,37.9 Z" />
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M28,28 A16,16 0 1,1 28,27.9 Z" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M38,20 A18,18 0 1,1 38,19.9 Z" />
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M50,18 A16,16 0 1,1 50,17.9 Z" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M60,24 A14,14 0 1,1 60,23.9 Z" />
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M68,34 A12,12 0 1,1 68,33.9 Z" />
+
+    <!-- Resting Cow Body (White with black spots) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#212121"
+        android:strokeWidth="1.2"
+        android:pathData="M42,72 C42,62 76,62 76,72 C76,80 42,80 42,72 Z" />
+
+    <!-- Cow Black Spots -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M48,68 A5,5 0 1,1 48,67.9 Z" />
+    <path
+        android:fillColor="#212121"
+        android:pathData="M64,66 A7,7 0 1,1 64,65.9 Z" />
+
+    <!-- Cow Head -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#212121"
+        android:strokeWidth="1.2"
+        android:pathData="M74,65 A6,6 0 1,1 74,64.9 Z" />
+
+    <!-- Cow Snout (Pink) -->
+    <path
+        android:fillColor="#FFCDD2"
+        android:pathData="M78,66 A3,3 0 1,1 78,65.9 Z" />
+
+    <!-- Red Apple Symbol -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M72,48 A4,4 0 1,1 72,47.9 Z" />
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M72,43 C73,42 75,42 75,44 Z" />
+
+</vector>
