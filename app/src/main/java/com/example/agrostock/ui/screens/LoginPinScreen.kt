@@ -53,12 +53,13 @@ import com.example.agrostock.ui.theme.AgroBorder
 import com.example.agrostock.ui.theme.AgroGreenPrimary
 import com.example.agrostock.ui.theme.AgroOfflineOrange
 import com.example.agrostock.ui.theme.AgroOfflineYellow
+import com.example.agrostock.ui.theme.AgroRedControlled
 import com.example.agrostock.ui.theme.AgroTextMuted
 import com.example.agrostock.ui.theme.AgroTextPrimary
 import com.example.agrostock.ui.theme.AgroTextSecondary
 
 /**
- * Screen 1: Acceso Rápido (RUT limitado a 10 caracteres y PIN de 6 dígitos)
+ * Screen 1: Acceso Rápido (Secuencia: 1° RUT, 2° PIN de 6 dígitos)
  * Matching Mockup 1 from Image 2
  */
 @Composable
@@ -68,6 +69,7 @@ fun LoginPinScreen(
     // Empty by default for new RUT and PIN
     var rutInput by remember { mutableStateOf("") }
     var pinInput by remember { mutableStateOf("") }
+    var showRutWarning by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -77,20 +79,14 @@ fun LoginPinScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Header Bar with status
+        // Top Header Bar with OFFLINE badge on top right (09:41 removed)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "09:41",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = AgroTextPrimary
-            )
             // OFFLINE Badge
             Surface(
                 color = AgroOfflineYellow,
@@ -144,24 +140,25 @@ fun LoginPinScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // AgroStock Logo
-                AgroStockLogo(logoSize = 110.dp)
+                // High Definition AgroStock Logo (Image 1)
+                AgroStockLogo(logoSize = 130.dp)
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Editable RUT Input Field (Restricted to max 12 formatted chars / 10 raw alphanumeric chars, e.g.: 12.345.678-9)
+                // Step 1: Editable RUT Input Field
                 OutlinedTextField(
                     value = rutInput,
                     onValueChange = { input ->
                         val clean = input.filter { it.isLetterOrDigit() || it == '-' || it == '.' }
                         if (clean.length <= 12) {
                             rutInput = clean
+                            if (clean.isNotBlank()) showRutWarning = false
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.90f)
                         .height(52.dp),
-                    placeholder = { Text("Ej: 12.345.678-9", fontSize = 13.sp, color = AgroTextMuted) },
+                    placeholder = { Text("1. Ingresar RUT (ej: 12.345.678-9)", fontSize = 13.sp, color = AgroTextMuted) },
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Default.Person,
@@ -183,13 +180,33 @@ fun LoginPinScreen(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedBorderColor = AgroGreenPrimary,
-                        unfocusedBorderColor = AgroBorder
+                        unfocusedBorderColor = if (showRutWarning) AgroRedControlled else AgroBorder
                     )
                 )
 
+                if (showRutWarning) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "👉 Ingresa primero tu RUT para continuar",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AgroRedControlled
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // PIN Dots Indicator (Gradual filling as user types)
+                // Step 2: PIN Dots Indicator (Gradual filling as user types)
+                Text(
+                    text = "2. INGRESA PIN DE 6 DÍGITOS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AgroTextSecondary,
+                    letterSpacing = 0.5.sp
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
@@ -211,17 +228,7 @@ fun LoginPinScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = "PIN DE 6 DÍGITOS",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AgroTextSecondary,
-                    letterSpacing = 0.5.sp
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Keypad (3x4 Grid)
                 val keypadRows = listOf(
@@ -245,18 +252,18 @@ fun LoginPinScreen(
                                     key = key,
                                     modifier = Modifier.weight(1f),
                                     onClick = {
-                                        when (key) {
-                                            "BORRAR" -> pinInput = ""
-                                            "BACK" -> if (pinInput.isNotEmpty()) pinInput = pinInput.dropLast(1)
-                                            else -> {
-                                                if (pinInput.length < 6) {
-                                                    pinInput += key
-                                                    // Auto submit when 6th digit typed
-                                                    if (pinInput.length == 6) {
-                                                        onLoginSuccess(
-                                                            if (rutInput.isBlank()) "12.345.678-9" else rutInput,
-                                                            pinInput
-                                                        )
+                                        if (rutInput.isBlank()) {
+                                            showRutWarning = true
+                                        } else {
+                                            when (key) {
+                                                "BORRAR" -> pinInput = ""
+                                                "BACK" -> if (pinInput.isNotEmpty()) pinInput = pinInput.dropLast(1)
+                                                else -> {
+                                                    if (pinInput.length < 6) {
+                                                        pinInput += key
+                                                        if (pinInput.length == 6) {
+                                                            onLoginSuccess(rutInput, pinInput)
+                                                        }
                                                     }
                                                 }
                                             }
@@ -273,10 +280,14 @@ fun LoginPinScreen(
                 // ENTRAR Button
                 Button(
                     onClick = {
-                        onLoginSuccess(
-                            if (rutInput.isBlank()) "12.345.678-9" else rutInput,
-                            if (pinInput.isBlank()) "123456" else pinInput
-                        )
+                        if (rutInput.isBlank()) {
+                            showRutWarning = true
+                        } else {
+                            onLoginSuccess(
+                                rutInput,
+                                if (pinInput.isBlank()) "123456" else pinInput
+                            )
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
