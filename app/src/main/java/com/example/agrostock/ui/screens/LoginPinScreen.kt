@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
@@ -43,8 +42,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,15 +58,16 @@ import com.example.agrostock.ui.theme.AgroTextPrimary
 import com.example.agrostock.ui.theme.AgroTextSecondary
 
 /**
- * Screen 1: Acceso Rápido (RUT editable y PIN de 6 dígitos)
+ * Screen 1: Acceso Rápido (RUT y PINVacíos e Interactivos)
  * Matching Mockup 1 from Image 2
  */
 @Composable
 fun LoginPinScreen(
     onLoginSuccess: (rut: String, pin: String) -> Unit = { _, _ -> }
 ) {
-    var rutInput by remember { mutableStateOf("14.821.903-K") }
-    var pinInput by remember { mutableStateOf("1234") }
+    // Empty by default for new RUT and PIN
+    var rutInput by remember { mutableStateOf("") }
+    var pinInput by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -149,14 +149,14 @@ fun LoginPinScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Editable RUT Input Field
+                // Editable RUT Input Field (Dark Text)
                 OutlinedTextField(
                     value = rutInput,
                     onValueChange = { rutInput = it },
                     modifier = Modifier
                         .fillMaxWidth(0.90f)
                         .height(52.dp),
-                    placeholder = { Text("Ej: 14.821.903-K", fontSize = 14.sp, color = AgroTextMuted) },
+                    placeholder = { Text("Ingresar RUT (ej: 14.821.903-K)", fontSize = 13.sp, color = AgroTextMuted) },
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Default.Person,
@@ -166,8 +166,15 @@ fun LoginPinScreen(
                         )
                     },
                     singleLine = true,
+                    textStyle = TextStyle(
+                        color = AgroTextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = AgroTextPrimary,
+                        unfocusedTextColor = AgroTextPrimary,
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedBorderColor = AgroGreenPrimary,
@@ -177,7 +184,7 @@ fun LoginPinScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // PIN Dots Indicator (6 digits)
+                // PIN Dots Indicator (Gradual filling as user types)
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
@@ -239,6 +246,13 @@ fun LoginPinScreen(
                                             else -> {
                                                 if (pinInput.length < 6) {
                                                     pinInput += key
+                                                    // Auto submit when 6th digit typed
+                                                    if (pinInput.length == 6) {
+                                                        onLoginSuccess(
+                                                            if (rutInput.isBlank()) "14.821.903-K" else rutInput,
+                                                            pinInput
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -254,7 +268,10 @@ fun LoginPinScreen(
                 // ENTRAR Button
                 Button(
                     onClick = {
-                        onLoginSuccess(rutInput, pinInput)
+                        onLoginSuccess(
+                            if (rutInput.isBlank()) "14.821.903-K" else rutInput,
+                            if (pinInput.isBlank()) "123456" else pinInput
+                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.9f)

@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
@@ -54,6 +55,7 @@ import com.example.agrostock.ui.theme.AgroGreenDark
 import com.example.agrostock.ui.theme.AgroGreenPrimary
 import com.example.agrostock.ui.theme.AgroRedControlled
 import com.example.agrostock.ui.theme.AgroRedLight
+import com.example.agrostock.ui.theme.AgroTextMuted
 import com.example.agrostock.ui.theme.AgroTextPrimary
 import com.example.agrostock.ui.theme.AgroTextSecondary
 
@@ -333,7 +335,7 @@ fun RetiroDiioScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Editable DIIO Input Field (Maximum 9 Digits)
+                    // Editable DIIO Input Field (Dark High Contrast Text)
                     OutlinedTextField(
                         value = rawDiioDigits,
                         onValueChange = { input ->
@@ -342,13 +344,20 @@ fun RetiroDiioScreen(
                                 rawDiioDigits = clean
                             }
                         },
-                        label = { Text("Ingresar DIIO (Máx 9 dígitos)", fontSize = 11.sp) },
-                        placeholder = { Text("Ej: 123456789", fontSize = 12.sp) },
+                        label = { Text("Ingresar DIIO (Máx 9 dígitos)", fontSize = 11.sp, color = AgroTextMuted) },
+                        placeholder = { Text("Ej: 123456789", fontSize = 12.sp, color = AgroTextMuted) },
                         modifier = Modifier.fillMaxWidth(),
+                        textStyle = TextStyle(
+                            color = AgroTextPrimary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         shape = RoundedCornerShape(8.dp),
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = AgroTextPrimary,
+                            unfocusedTextColor = AgroTextPrimary,
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
                             focusedBorderColor = AgroGreenPrimary,

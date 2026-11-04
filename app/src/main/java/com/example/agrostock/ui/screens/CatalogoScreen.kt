@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +59,7 @@ import com.example.agrostock.ui.theme.AgroBorder
 import com.example.agrostock.ui.theme.AgroGreenDark
 import com.example.agrostock.ui.theme.AgroGreenPrimary
 import com.example.agrostock.ui.theme.AgroOfflineOrange
+import com.example.agrostock.ui.theme.AgroTextMuted
 import com.example.agrostock.ui.theme.AgroTextPrimary
 import com.example.agrostock.ui.theme.AgroTextSecondary
 
@@ -210,14 +212,14 @@ fun CatalogoScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Search Bar
+            // Search Bar with High Contrast Text
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                placeholder = { Text("Buscador de insumos...", fontSize = 13.sp, color = AgroTextSecondary) },
+                placeholder = { Text("Buscador de insumos...", fontSize = 13.sp, color = AgroTextMuted) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -227,8 +229,15 @@ fun CatalogoScreen(
                     )
                 },
                 singleLine = true,
+                textStyle = TextStyle(
+                    color = AgroTextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                ),
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = AgroTextPrimary,
+                    unfocusedTextColor = AgroTextPrimary,
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White,
                     focusedBorderColor = AgroGreenPrimary,
