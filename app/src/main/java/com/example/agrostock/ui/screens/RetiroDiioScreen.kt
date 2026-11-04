@@ -1,7 +1,6 @@
 package com.example.agrostock.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,8 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -48,7 +47,6 @@ import com.example.agrostock.ui.theme.AgroBackground
 import com.example.agrostock.ui.theme.AgroBorder
 import com.example.agrostock.ui.theme.AgroDarkHeader
 import com.example.agrostock.ui.theme.AgroGreenDark
-import com.example.agrostock.ui.theme.AgroGreenLight
 import com.example.agrostock.ui.theme.AgroGreenPrimary
 import com.example.agrostock.ui.theme.AgroRedControlled
 import com.example.agrostock.ui.theme.AgroRedLight
@@ -61,13 +59,16 @@ import com.example.agrostock.ui.theme.AgroTextSecondary
  */
 @Composable
 fun RetiroDiioScreen(
+    productName: String = "Penicilina Retard 100ml",
+    categoryName: String = "Antibiótico Bovino Inyectable",
+    stockText: String = "Stock actual: 24 frascos",
+    isControlled: Boolean = true,
     onBackClick: () -> Unit = {},
-    onSaveMovement: () -> Unit = {}
+    onSaveMovement: (quantity: Int, diio: String, title: String) -> Unit = { _, _, _ -> }
 ) {
     var quantity by remember { mutableIntStateOf(15) }
     var scannedDiio by remember { mutableStateOf("123.456.789") }
     var animalInfo by remember { mutableStateOf("Vaca 402 (Lactancia Activa)") }
-    var showScanSuccessDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -162,28 +163,30 @@ fun RetiroDiioScreen(
                         verticalAlignment = Alignment.Top
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            // Red Controlled Tag
-                            Surface(
-                                color = AgroRedLight,
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
-                                Text(
-                                    text = "FÁRMACO CONTROLADO",
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = AgroRedControlled,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
+                            if (isControlled) {
+                                // Red Controlled Tag
+                                Surface(
+                                    color = AgroRedLight,
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = "FÁRMACO CONTROLADO",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = AgroRedControlled,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Penicilina Retard 100ml",
+                                text = productName,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Black,
                                 color = AgroTextPrimary
                             )
                             Text(
-                                text = "Antibiótico Bovino Inyectable",
+                                text = categoryName,
                                 fontSize = 12.sp,
                                 color = AgroTextSecondary
                             )
@@ -192,7 +195,7 @@ fun RetiroDiioScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Stock actual: 24 frascos",
+                        text = stockText,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = AgroTextPrimary,
@@ -373,7 +376,6 @@ fun RetiroDiioScreen(
                                 // Simulate scanning next ear tag
                                 scannedDiio = "123.456.790"
                                 animalInfo = "Vaca 405 (Secado - Potrero 2)"
-                                showScanSuccessDialog = true
                             },
                         color = AgroDarkHeader,
                         shape = RoundedCornerShape(8.dp)
@@ -405,7 +407,10 @@ fun RetiroDiioScreen(
 
             // Bottom Save Movement Button
             Button(
-                onClick = onSaveMovement,
+                onClick = {
+                    val movementTitle = "$quantity UDS $productName"
+                    onSaveMovement(quantity, scannedDiio, movementTitle)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),

@@ -1,6 +1,7 @@
 package com.example.agrostock.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material.icons.filled.Settings
@@ -51,55 +53,25 @@ import com.example.agrostock.ui.theme.AgroTextSecondary
 data class OfflineTransaction(
     val id: String,
     val title: String,
-    val detail: String,
-    val timeLocation: String,
+    val detail: String = "",
+    val timeLocation: String = "Hace un momento · Módulo Fundo",
     val diio: String? = null,
-    val status: String = "SYNC_PENDING"
+    val isSynced: Boolean = false
 )
 
 /**
- * Screen 4: Cola de Sincronización Offline
+ * Screen 4: Cola de Sincronización Offline & Online Sync
  * Matching Mockup 4 from Image 2
  */
 @Composable
 fun SyncQueueScreen(
+    transactions: List<OfflineTransaction> = emptyList(),
+    isOnline: Boolean = false,
+    onForceSync: () -> Unit = {},
     onBackClick: () -> Unit = {},
-    onReturnToCatalog: () -> Unit = {},
-    isOnline: Boolean = false
+    onReturnToCatalog: () -> Unit = {}
 ) {
-    val pendingTransactions = listOf(
-        OfflineTransaction(
-            id = "TX-2024-0081",
-            title = "15 sacos de Concentrado",
-            detail = "",
-            timeLocation = "Hace 10 min · Galpón 2"
-        ),
-        OfflineTransaction(
-            id = "TX-2024-0080",
-            title = "2 fármacos (Penicilina Bov 100ml)",
-            detail = "",
-            timeLocation = "Hace 25 min · Enfermería",
-            diio = "DIIO: 123.456.789"
-        ),
-        OfflineTransaction(
-            id = "TX-2024-0079",
-            title = "50 kg Sal Mineral Bloque",
-            detail = "",
-            timeLocation = "Hace 40 min · Potrero 4"
-        ),
-        OfflineTransaction(
-            id = "TX-2024-0078",
-            title = "10 sacos Fertilizante Urea",
-            detail = "",
-            timeLocation = "Hace 1 hora · Bodega Central"
-        ),
-        OfflineTransaction(
-            id = "TX-2024-0077",
-            title = "1 frasco Ivermectina 500ml",
-            detail = "",
-            timeLocation = "Hace 2 horas · Bodega Vivero"
-        )
-    )
+    val pendingCount = transactions.count { !it.isSynced }
 
     Column(
         modifier = Modifier
@@ -142,11 +114,15 @@ fun SyncQueueScreen(
             }
         }
 
-        // Yellow Alert Banner
+        // Network Status Banner
+        val bannerBg = if (isOnline) Color(0xFFE8F5E9) else AgroOfflineYellow
+        val bannerBorder = if (isOnline) AgroGreenPrimary else Color(0xFFFFB74D)
+        val bannerTextColor = if (isOnline) AgroGreenPrimary else AgroOfflineOrange
+
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = AgroOfflineYellow,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFB74D))
+            color = bannerBg,
+            border = androidx.compose.foundation.BorderStroke(1.dp, bannerBorder)
         ) {
             Column(
                 modifier = Modifier.padding(12.dp)
@@ -155,25 +131,25 @@ fun SyncQueueScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Warning",
-                        tint = AgroOfflineOrange,
+                        imageVector = if (isOnline) Icons.Default.CheckCircle else Icons.Default.Warning,
+                        contentDescription = "Status",
+                        tint = bannerTextColor,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "MODO OFFLINE (5 PENDIENTES)",
+                        text = if (isOnline) "● MODO ONLINE (CONECTADO - $pendingCount PENDIENTES)" else "MODO OFFLINE ($pendingCount PENDIENTES)",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Black,
-                        color = AgroOfflineOrange
+                        color = bannerTextColor
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Surface(
-                        color = AgroOfflineOrange,
+                        color = bannerTextColor,
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            text = "SQLite",
+                            text = if (isOnline) "Wi-Fi" else "SQLite",
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -183,7 +159,10 @@ fun SyncQueueScreen(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Transacciones retenidas en local. Los datos se guardan de forma segura en el dispositivo sin riesgo de pérdida.",
+                    text = if (isOnline)
+                        "Conexión a red activa. Puedes forzar la sincronización para enviar los registros pendientes al servidor."
+                    else
+                        "Transacciones retenidas en local. Los datos se guardan de forma segura en el dispositivo sin riesgo de pérdida.",
                     fontSize = 11.sp,
                     color = AgroTextPrimary,
                     lineHeight = 14.sp
@@ -210,9 +189,9 @@ fun SyncQueueScreen(
                     letterSpacing = 0.5.sp
                 )
                 Text(
-                    text = "Total: 5 registros",
+                    text = "Total: ${transactions.size} registros",
                     fontSize = 10.sp,
-                    color = AgroOfflineOrange,
+                    color = if (pendingCount > 0) AgroOfflineOrange else AgroGreenPrimary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -224,19 +203,20 @@ fun SyncQueueScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                items(pendingTransactions) { tx ->
+                items(transactions) { tx ->
                     TransactionCardItem(tx = tx)
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Force Sync Button (Disabled in offline mode)
+            // Force Sync Button
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp),
-                color = if (isOnline) AgroGreenPrimary else Color(0xFFE0E0E0),
+                    .height(44.dp)
+                    .clickable(enabled = isOnline && pendingCount > 0) { onForceSync() },
+                color = if (isOnline && pendingCount > 0) AgroGreenPrimary else Color(0xFFE0E0E0),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Row(
@@ -247,20 +227,24 @@ fun SyncQueueScreen(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Sync",
-                        tint = if (isOnline) Color.White else Color(0xFF9E9E9E),
+                        tint = if (isOnline && pendingCount > 0) Color.White else Color(0xFF9E9E9E),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "FORZAR SINCRONIZACIÓN",
+                        text = if (pendingCount == 0) "TODOS LOS REGISTROS SINCRONIZADOS" else "FORZAR SINCRONIZACIÓN",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isOnline) Color.White else Color(0xFF757575)
+                        color = if (isOnline && pendingCount > 0) Color.White else Color(0xFF757575)
                     )
                 }
             }
             Text(
-                text = if (isOnline) "Conexión disponible - listo para enviar" else "(deshabilitado en offline - esperando conexión Wi-Fi)",
+                text = when {
+                    pendingCount == 0 -> "Todos los datos han sido transmitidos con éxito"
+                    isOnline -> "Presiona para enviar los $pendingCount registros al servidor"
+                    else -> "(deshabilitado en offline - esperando conexión Wi-Fi)"
+                },
                 fontSize = 10.sp,
                 color = AgroTextSecondary,
                 modifier = Modifier
@@ -364,9 +348,9 @@ private fun TransactionCardItem(tx: OfflineTransaction) {
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
-                        imageVector = Icons.Default.AccessTime,
-                        contentDescription = "Time",
-                        tint = AgroOfflineOrange,
+                        imageVector = if (tx.isSynced) Icons.Default.CheckCircle else Icons.Default.AccessTime,
+                        contentDescription = "Status",
+                        tint = if (tx.isSynced) AgroGreenPrimary else AgroOfflineOrange,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -394,24 +378,28 @@ private fun TransactionCardItem(tx: OfflineTransaction) {
                 )
             }
 
-            // SYNC_PENDING Badge
+            // Sync Status Badge
+            val badgeBg = if (tx.isSynced) Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
+            val badgeBorder = if (tx.isSynced) AgroGreenPrimary else Color(0xFFFFCC80)
+            val badgeTextColor = if (tx.isSynced) AgroGreenPrimary else AgroOfflineOrange
+
             Surface(
-                color = Color(0xFFFFF3E0),
+                color = badgeBg,
                 shape = RoundedCornerShape(6.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFCC80))
+                border = androidx.compose.foundation.BorderStroke(1.dp, badgeBorder)
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
-                        text = "SYNC_PENDING",
+                        text = if (tx.isSynced) "SINCRONIZADO" else "SYNC_PENDING",
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black,
-                        color = AgroOfflineOrange
+                        color = badgeTextColor
                     )
                     Text(
-                        text = "Esperando red",
+                        text = if (tx.isSynced) "Enviado a nube" else "Esperando red",
                         fontSize = 8.sp,
                         color = AgroTextSecondary
                     )

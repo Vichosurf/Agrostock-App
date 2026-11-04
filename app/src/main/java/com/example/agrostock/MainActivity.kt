@@ -30,6 +30,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.agrostock.ui.screens.CatalogoScreen
 import com.example.agrostock.ui.screens.LoginPinScreen
+import com.example.agrostock.ui.screens.OfflineTransaction
+import com.example.agrostock.ui.screens.ProductItem
 import com.example.agrostock.ui.screens.RetiroDiioScreen
 import com.example.agrostock.ui.screens.SyncQueueScreen
 import com.example.agrostock.ui.theme.AgroGreenPrimary
@@ -73,10 +76,47 @@ fun AgroStockMainApp() {
     var currentScreen by remember { mutableStateOf(AgroScreen.LOGIN) }
     var isOnlineMode by remember { mutableStateOf(false) }
 
+    // Selected product for withdrawal
+    var selectedProductItem by remember {
+        mutableStateOf<ProductItem?>(null)
+    }
+
+    // Dynamic list of transactions
+    val transactions = remember {
+        mutableStateListOf(
+            OfflineTransaction(
+                id = "TX-2024-0081",
+                title = "15 sacos de Concentrado",
+                timeLocation = "Hace 10 min · Galpón 2"
+            ),
+            OfflineTransaction(
+                id = "TX-2024-0080",
+                title = "2 fármacos (Penicilina Bov 100ml)",
+                timeLocation = "Hace 25 min · Enfermería",
+                diio = "DIIO: 123.456.789"
+            ),
+            OfflineTransaction(
+                id = "TX-2024-0079",
+                title = "50 kg Sal Mineral Bloque",
+                timeLocation = "Hace 40 min · Potrero 4"
+            ),
+            OfflineTransaction(
+                id = "TX-2024-0078",
+                title = "10 sacos Fertilizante Urea",
+                timeLocation = "Hace 1 hora · Bodega Central"
+            ),
+            OfflineTransaction(
+                id = "TX-2024-0077",
+                title = "1 frasco Ivermectina 500ml",
+                timeLocation = "Hace 2 horas · Bodega Vivero"
+            )
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            // ONLY show the top bar when logged in (not in LOGIN screen)
+            // ONLY show top navigation tabs when logged in
             if (currentScreen != AgroScreen.LOGIN) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -149,7 +189,7 @@ fun AgroStockMainApp() {
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        // Navigation Tabs for logged in screens (Retiro DIIO, Catálogo, Cola Envíos)
+                        // Logged-in screen navigation tabs
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -159,9 +199,9 @@ fun AgroStockMainApp() {
                                 Surface(
                                     modifier = Modifier
                                         .weight(1f)
-                                    .height(30.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable { currentScreen = screen },
+                                        .height(30.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable { currentScreen = screen },
                                     color = if (isSelected) AgroGreenPrimary else Color(0xFF334155),
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
@@ -190,22 +230,69 @@ fun AgroStockMainApp() {
                 .padding(innerPadding)
         ) {
             when (currentScreen) {
+                // Step 1: LOGIN -> Navigates to CATALOGO
                 AgroScreen.LOGIN -> LoginPinScreen(
-                    onLoginSuccess = { currentScreen = AgroScreen.CATALOGO }
+                    onLoginSuccess = {
+                        currentScreen = AgroScreen.CATALOGO
+                    }
                 )
-                AgroScreen.RETIRO -> RetiroDiioScreen(
-                    onBackClick = { currentScreen = AgroScreen.CATALOGO },
-                    onSaveMovement = { currentScreen = AgroScreen.COLA_SYNC }
-                )
+
+                // Step 2: CATALOGO -> Selecting product navigates to RETIRO
                 AgroScreen.CATALOGO -> CatalogoScreen(
-                    onSelectProduct = { currentScreen = AgroScreen.RETIRO },
-                    onGoToWithdrawal = { currentScreen = AgroScreen.RETIRO },
-                    onGoToMovements = { currentScreen = AgroScreen.COLA_SYNC }
+                    onSelectProduct = { product ->
+                        selectedProductItem = product
+                        currentScreen = AgroScreen.RETIRO
+                    },
+                    onGoToWithdrawal = {
+                        currentScreen = AgroScreen.RETIRO
+                    },
+                    onGoToMovements = {
+                        currentScreen = AgroScreen.COLA_SYNC
+                    }
                 )
+
+                // Step 3: RETIRO -> Saving movement creates record and navigates to COLA_SYNC
+                AgroScreen.RETIRO -> RetiroDiioScreen(
+                    productName = selectedProductItem?.name ?: "Penicilina Retard 100ml",
+                    categoryName = selectedProductItem?.category ?: "Antibiótico Bovino Inyectable",
+                    stockText = selectedProductItem?.stock ?: "Stock actual: 24 frascos",
+                    isControlled = selectedProductItem?.category == "Fármacos" || selectedProductItem == null,
+                    onBackClick = {
+                        currentScreen = AgroScreen.CATALOGO
+                    },
+                    onSaveMovement = { _, diio, movementTitle ->
+                        val newNumber = 82 + transactions.size
+                        val newId = "TX-2024-00$newNumber"
+                        transactions.add(
+                            0,
+                            OfflineTransaction(
+                                id = newId,
+                                title = movementTitle,
+                                timeLocation = "Hace un momento · Módulo Fundo",
+                                diio = "DIIO: $diio",
+                                isSynced = false
+                            )
+                        )
+                        currentScreen = AgroScreen.COLA_SYNC
+                    }
+                )
+
+                // Step 4: COLA_SYNC -> Displays queue and allows syncing when Online
                 AgroScreen.COLA_SYNC -> SyncQueueScreen(
-                    onBackClick = { currentScreen = AgroScreen.CATALOGO },
-                    onReturnToCatalog = { currentScreen = AgroScreen.CATALOGO },
-                    isOnline = isOnlineMode
+                    transactions = transactions,
+                    isOnline = isOnlineMode,
+                    onForceSync = {
+                        // Mark all pending transactions as synced
+                        val updatedList = transactions.map { it.copy(isSynced = true) }
+                        transactions.clear()
+                        transactions.addAll(updatedList)
+                    },
+                    onBackClick = {
+                        currentScreen = AgroScreen.CATALOGO
+                    },
+                    onReturnToCatalog = {
+                        currentScreen = AgroScreen.CATALOGO
+                    }
                 )
             }
         }
