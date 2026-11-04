@@ -219,30 +219,36 @@ fun AgroStockMainApp() {
                 )
 
                 // Step 3: RETIRO -> Saving movement creates record and navigates to COLA_SYNC
-                AgroScreen.RETIRO -> RetiroDiioScreen(
-                    productName = selectedProductItem?.name ?: "Penicilina Retard 100ml",
-                    categoryName = selectedProductItem?.category ?: "Antibiótico Bovino Inyectable",
-                    stockText = selectedProductItem?.stock ?: "Stock actual: 24 frascos",
-                    isControlled = selectedProductItem?.category == "Fármacos" || selectedProductItem == null,
-                    onBackClick = {
-                        currentScreen = AgroScreen.CATALOGO
-                    },
-                    onSaveMovement = { _, diio, movementTitle ->
-                        val newNumber = 82 + transactions.size
-                        val newId = "TX-2024-00$newNumber"
-                        transactions.add(
-                            0,
-                            OfflineTransaction(
-                                id = newId,
-                                title = movementTitle,
-                                timeLocation = "Hace un momento · Módulo Fundo",
-                                diio = "DIIO: $diio",
-                                isSynced = false
+                AgroScreen.RETIRO -> {
+                    val rawStockString = selectedProductItem?.stock ?: "24"
+                    val parsedStock = rawStockString.filter { it.isDigit() }.toIntOrNull() ?: 24
+
+                    RetiroDiioScreen(
+                        productName = selectedProductItem?.name ?: "Saco de Concentrado",
+                        categoryName = selectedProductItem?.category ?: "Forrajes",
+                        stockText = selectedProductItem?.stock ?: "Stock: 124 sacos",
+                        maxStock = parsedStock,
+                        isControlled = selectedProductItem?.category == "Fármacos",
+                        onBackClick = {
+                            currentScreen = AgroScreen.CATALOGO
+                        },
+                        onSaveMovement = { _, diio, movementTitle ->
+                            val newNumber = 82 + transactions.size
+                            val newId = "TX-2024-00$newNumber"
+                            transactions.add(
+                                0,
+                                OfflineTransaction(
+                                    id = newId,
+                                    title = movementTitle,
+                                    timeLocation = "Hace un momento · Módulo Fundo",
+                                    diio = "DIIO: $diio",
+                                    isSynced = false
+                                )
                             )
-                        )
-                        currentScreen = AgroScreen.COLA_SYNC
-                    }
-                )
+                            currentScreen = AgroScreen.COLA_SYNC
+                        }
+                    )
+                }
 
                 // Step 4: COLA_SYNC -> Displays queue and allows syncing when Online
                 AgroScreen.COLA_SYNC -> SyncQueueScreen(

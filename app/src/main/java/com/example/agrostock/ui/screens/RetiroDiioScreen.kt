@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,18 +62,22 @@ import com.example.agrostock.ui.theme.AgroTextSecondary
 
 /**
  * Screen 2: Registro de Retiro y DIIO (Módulo Sanitario)
- * Matching Mockup 2 from Image 2 with dynamic 9-digit DIIO entry
+ * Matching Mockup 2 from Image 2 with editable quantity & stock limit validation
  */
 @Composable
 fun RetiroDiioScreen(
     productName: String = "Penicilina Retard 100ml",
     categoryName: String = "Antibiótico Bovino Inyectable",
     stockText: String = "Stock actual: 24 frascos",
+    maxStock: Int = 24,
     isControlled: Boolean = true,
     onBackClick: () -> Unit = {},
     onSaveMovement: (quantity: Int, diio: String, title: String) -> Unit = { _, _, _ -> }
 ) {
     var quantity by remember { mutableIntStateOf(15) }
+    var quantityInputText by remember { mutableStateOf("15") }
+    var showStockWarning by remember { mutableStateOf(false) }
+
     var rawDiioDigits by remember { mutableStateOf("123456789") } // 9 digits raw input
     var animalInfo by remember { mutableStateOf("Vaca 402 (Lactancia Activa)") }
 
@@ -87,6 +92,14 @@ fun RetiroDiioScreen(
     }
 
     val isDiioValid = rawDiioDigits.filter { it.isDigit() }.length == 9
+
+    // Update quantity and text synchronized
+    fun updateQuantity(newValue: Int) {
+        val clamped = newValue.coerceIn(1, maxStock)
+        quantity = clamped
+        quantityInputText = clamped.toString()
+        showStockWarning = newValue > maxStock
+    }
 
     Column(
         modifier = Modifier
@@ -222,7 +235,7 @@ fun RetiroDiioScreen(
                 }
             }
 
-            // CARD 2: CANTIDAD A RETIRAR (DOSIS/UNIDADES)
+            // CARD 2: CANTIDAD A RETIRAR (DOSIS/UNIDADES EDITABLE Y LIMITADO AL STOCK)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -241,47 +254,81 @@ fun RetiroDiioScreen(
                         letterSpacing = 0.5.sp
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Quantity Display Box
-                    Surface(
+                    // Editable Quantity OutlinedTextField (Direct number typing)
+                    OutlinedTextField(
+                        value = quantityInputText,
+                        onValueChange = { input ->
+                            val cleanDigits = input.filter { it.isDigit() }
+                            if (cleanDigits.isEmpty()) {
+                                quantityInputText = ""
+                                quantity = 1
+                            } else {
+                                val typedVal = cleanDigits.toIntOrNull() ?: 1
+                                if (typedVal > maxStock) {
+                                    quantity = maxStock
+                                    quantityInputText = maxStock.toString()
+                                    showStockWarning = true
+                                } else {
+                                    quantity = maxOf(1, typedVal)
+                                    quantityInputText = cleanDigits
+                                    showStockWarning = false
+                                }
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth(0.65f)
-                            .height(50.dp),
-                        color = Color(0xFFF1F5F9),
+                            .height(54.dp),
+                        trailingIcon = {
+                            Text(
+                                text = "UDS",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AgroTextSecondary,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                        },
+                        singleLine = true,
+                        textStyle = TextStyle(
+                            color = AgroTextPrimary,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Center
+                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         shape = RoundedCornerShape(10.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, AgroBorder)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    text = "$quantity",
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = AgroTextPrimary
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "UDS",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AgroTextSecondary,
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                )
-                            }
-                        }
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = AgroTextPrimary,
+                            unfocusedTextColor = AgroTextPrimary,
+                            focusedContainerColor = Color(0xFFF1F5F9),
+                            unfocusedContainerColor = Color(0xFFF1F5F9),
+                            focusedBorderColor = AgroGreenPrimary,
+                            unfocusedBorderColor = if (showStockWarning) AgroRedControlled else AgroBorder
+                        )
+                    )
+
+                    if (showStockWarning) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "⚠️ Límite de stock máximo alcanzado ($maxStock UDS)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AgroRedControlled,
+                            textAlign = TextAlign.Center
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // 6 Buttons Grid
+                    // 6 Preset Adjustment Buttons Grid
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        DeltaButton("-10", Modifier.weight(1f)) { quantity = maxOf(1, quantity - 10) }
-                        DeltaButton("-5", Modifier.weight(1f)) { quantity = maxOf(1, quantity - 5) }
-                        DeltaButton("-1", Modifier.weight(1f)) { quantity = maxOf(1, quantity - 1) }
+                        DeltaButton("-10", Modifier.weight(1f)) { updateQuantity(quantity - 10) }
+                        DeltaButton("-5", Modifier.weight(1f)) { updateQuantity(quantity - 5) }
+                        DeltaButton("-1", Modifier.weight(1f)) { updateQuantity(quantity - 1) }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -290,9 +337,9 @@ fun RetiroDiioScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        DeltaButton("+1", Modifier.weight(1f), isPositive = true) { quantity += 1 }
-                        DeltaButton("+5", Modifier.weight(1f), isPositive = true) { quantity += 5 }
-                        DeltaButton("+10", Modifier.weight(1f), isPositive = true) { quantity += 10 }
+                        DeltaButton("+1", Modifier.weight(1f), isPositive = true) { updateQuantity(quantity + 1) }
+                        DeltaButton("+5", Modifier.weight(1f), isPositive = true) { updateQuantity(quantity + 5) }
+                        DeltaButton("+10", Modifier.weight(1f), isPositive = true) { updateQuantity(quantity + 10) }
                     }
                 }
             }
