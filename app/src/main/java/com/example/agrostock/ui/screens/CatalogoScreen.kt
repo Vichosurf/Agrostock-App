@@ -24,10 +24,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.LocalPharmacy
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -56,6 +57,7 @@ import com.example.agrostock.ui.theme.AgroBackground
 import com.example.agrostock.ui.theme.AgroBorder
 import com.example.agrostock.ui.theme.AgroGreenDark
 import com.example.agrostock.ui.theme.AgroGreenPrimary
+import com.example.agrostock.ui.theme.AgroOfflineOrange
 import com.example.agrostock.ui.theme.AgroTextPrimary
 import com.example.agrostock.ui.theme.AgroTextSecondary
 
@@ -70,11 +72,13 @@ data class ProductItem(
 )
 
 /**
- * Screen 3: Catálogo y Búsqueda (Online)
+ * Screen 3: Catálogo y Búsqueda (Online/Offline)
  * Matching Mockup 3 from Image 2
  */
 @Composable
 fun CatalogoScreen(
+    userRut: String = "14.821.903-K",
+    isOnline: Boolean = true,
     onSelectProduct: (ProductItem) -> Unit = {},
     onGoToWithdrawal: () -> Unit = {},
     onGoToMovements: () -> Unit = {}
@@ -132,10 +136,11 @@ fun CatalogoScreen(
             .fillMaxSize()
             .background(AgroBackground)
     ) {
-        // Online Mode Header Bar (Green)
+        // Mode Header Bar
+        val modeColor = if (isOnline) AgroGreenDark else Color(0xFF374151)
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = AgroGreenDark
+            color = modeColor
         ) {
             Row(
                 modifier = Modifier
@@ -146,25 +151,25 @@ fun CatalogoScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.Wifi,
-                        contentDescription = "Online",
+                        imageVector = if (isOnline) Icons.Default.Wifi else Icons.Default.WifiOff,
+                        contentDescription = "Network",
                         tint = Color.White,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "● Modo Online (Con Wi-Fi) - Sincronizado",
+                        text = if (isOnline) "● Modo Online (Con Wi-Fi) - Sincronizado" else "● Modo Offline - Guardado Local",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 }
                 Surface(
-                    color = Color(0xFF4CAF50),
+                    color = if (isOnline) Color(0xFF4CAF50) else AgroOfflineOrange,
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
-                        text = "Active",
+                        text = if (isOnline) "Active" else "Local",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -353,20 +358,20 @@ fun CatalogoScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "👤 RUT: 14.821.903-K  Turno Mañana · Módulo Fundo",
+                            text = "👤 RUT: $userRut  Turno Mañana · Módulo Fundo",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = AgroTextPrimary
                         )
                         Surface(
-                            color = Color(0xFFE8F5E9),
+                            color = if (isOnline) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
                             shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
-                                text = "En Línea",
+                                text = if (isOnline) "En Línea" else "Offline",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = AgroGreenPrimary,
+                                color = if (isOnline) AgroGreenPrimary else AgroOfflineOrange,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }

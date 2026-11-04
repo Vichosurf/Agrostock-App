@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -27,6 +28,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,7 +59,7 @@ import com.example.agrostock.ui.theme.AgroTextSecondary
 
 /**
  * Screen 2: Registro de Retiro y DIIO (Módulo Sanitario)
- * Matching Mockup 2 from Image 2
+ * Matching Mockup 2 from Image 2 with dynamic 9-digit DIIO entry
  */
 @Composable
 fun RetiroDiioScreen(
@@ -67,8 +71,20 @@ fun RetiroDiioScreen(
     onSaveMovement: (quantity: Int, diio: String, title: String) -> Unit = { _, _, _ -> }
 ) {
     var quantity by remember { mutableIntStateOf(15) }
-    var scannedDiio by remember { mutableStateOf("123.456.789") }
+    var rawDiioDigits by remember { mutableStateOf("123456789") } // 9 digits raw input
     var animalInfo by remember { mutableStateOf("Vaca 402 (Lactancia Activa)") }
+
+    // Format raw digits into 3.3.3 DIIO format (e.g., 123.456.789)
+    val formattedDiio = remember(rawDiioDigits) {
+        val clean = rawDiioDigits.filter { it.isDigit() }.take(9)
+        when {
+            clean.length > 6 -> "${clean.substring(0, 3)}.${clean.substring(3, 6)}.${clean.substring(6)}"
+            clean.length > 3 -> "${clean.substring(0, 3)}.${clean.substring(3)}"
+            else -> clean
+        }
+    }
+
+    val isDiioValid = rawDiioDigits.filter { it.isDigit() }.length == 9
 
     Column(
         modifier = Modifier
@@ -279,7 +295,7 @@ fun RetiroDiioScreen(
                 }
             }
 
-            // CARD 3: ARETE ANIMAL (DIIO OBLIGATORIO)
+            // CARD 3: ARETE ANIMAL (DIIO OBLIGATORIO - MÁXIMO 9 DÍGITOS)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -317,7 +333,32 @@ fun RetiroDiioScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Linked Crotal Box
+                    // Editable DIIO Input Field (Maximum 9 Digits)
+                    OutlinedTextField(
+                        value = rawDiioDigits,
+                        onValueChange = { input ->
+                            val clean = input.filter { it.isDigit() }
+                            if (clean.length <= 9) {
+                                rawDiioDigits = clean
+                            }
+                        },
+                        label = { Text("Ingresar DIIO (Máx 9 dígitos)", fontSize = 11.sp) },
+                        placeholder = { Text("Ej: 123456789", fontSize = 12.sp) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = AgroGreenPrimary,
+                            unfocusedBorderColor = AgroBorder
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Linked Crotal Display Box
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = Color(0xFFE8F5E9),
@@ -337,21 +378,23 @@ fun RetiroDiioScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "DIIO: $scannedDiio",
+                                    text = if (formattedDiio.isBlank()) "DIIO: ---.---.---" else "DIIO: $formattedDiio",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Black,
                                     color = AgroTextPrimary
                                 )
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = AgroGreenPrimary
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Verified",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                if (isDiioValid) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = AgroGreenPrimary
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Verified",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
                             Spacer(modifier = Modifier.height(2.dp))
@@ -373,8 +416,8 @@ fun RetiroDiioScreen(
                             .height(46.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .clickable {
-                                // Simulate scanning next ear tag
-                                scannedDiio = "123.456.790"
+                                // Simulate scanning next ear tag with 9 digits
+                                rawDiioDigits = "123456790"
                                 animalInfo = "Vaca 405 (Secado - Potrero 2)"
                             },
                         color = AgroDarkHeader,
@@ -409,7 +452,7 @@ fun RetiroDiioScreen(
             Button(
                 onClick = {
                     val movementTitle = "$quantity UDS $productName"
-                    onSaveMovement(quantity, scannedDiio, movementTitle)
+                    onSaveMovement(quantity, formattedDiio, movementTitle)
                 },
                 modifier = Modifier
                     .fillMaxWidth()

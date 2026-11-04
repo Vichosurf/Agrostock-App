@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,11 +11,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Wifi
@@ -36,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,11 +48,11 @@ import com.example.agrostock.ui.theme.AgroOfflineOrange
 import com.example.agrostock.ui.theme.AgroOfflineYellow
 import com.example.agrostock.ui.theme.AgrostockTheme
 
-enum class AgroScreen(val label: String) {
-    LOGIN("1. PIN Acceso"),
-    RETIRO("2. Retiro DIIO"),
-    CATALOGO("3. Catálogo"),
-    COLA_SYNC("4. Cola Envíos")
+enum class AgroScreen {
+    LOGIN,
+    RETIRO,
+    CATALOGO,
+    COLA_SYNC
 }
 
 class MainActivity : ComponentActivity() {
@@ -75,6 +71,7 @@ class MainActivity : ComponentActivity() {
 fun AgroStockMainApp() {
     var currentScreen by remember { mutableStateOf(AgroScreen.LOGIN) }
     var isOnlineMode by remember { mutableStateOf(false) }
+    var loggedInRut by remember { mutableStateOf("14.821.903-K") }
 
     // Selected product for withdrawal
     var selectedProductItem by remember {
@@ -116,7 +113,7 @@ fun AgroStockMainApp() {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            // ONLY show top navigation tabs when logged in
+            // Sleek Top Header Bar (ONLY visible when logged in)
             if (currentScreen != AgroScreen.LOGIN) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -126,7 +123,7 @@ fun AgroStockMainApp() {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 8.dp, end = 8.dp, top = 28.dp, bottom = 6.dp)
+                            .padding(start = 12.dp, end = 12.dp, top = 28.dp, bottom = 10.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -135,30 +132,28 @@ fun AgroStockMainApp() {
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "AgroStock - Maquetas",
-                                    fontSize = 12.sp,
+                                    text = "AgroStock Terreno",
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(start = 6.dp)
+                                    color = Color.White
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 IconButton(
                                     onClick = { currentScreen = AgroScreen.LOGIN },
-                                    modifier = Modifier.size(22.dp)
+                                    modifier = Modifier.size(24.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.ExitToApp,
                                         contentDescription = "Cerrar sesión",
                                         tint = Color.White.copy(alpha = 0.7f),
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
 
-                            // Online / Offline Switch
+                            // Online / Offline Network Switch
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(end = 4.dp)
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = if (isOnlineMode) Icons.Default.Wifi else Icons.Default.WifiOff,
@@ -186,39 +181,6 @@ fun AgroStockMainApp() {
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // Logged-in screen navigation tabs
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            listOf(AgroScreen.RETIRO, AgroScreen.CATALOGO, AgroScreen.COLA_SYNC).forEach { screen ->
-                                val isSelected = currentScreen == screen
-                                Surface(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(30.dp)
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .clickable { currentScreen = screen },
-                                    color = if (isSelected) AgroGreenPrimary else Color(0xFF334155),
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        Text(
-                                            text = screen.label,
-                                            fontSize = 10.sp,
-                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                                            color = if (isSelected) Color.White else Color(0xFFCBD5E1)
-                                        )
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -232,13 +194,18 @@ fun AgroStockMainApp() {
             when (currentScreen) {
                 // Step 1: LOGIN -> Navigates to CATALOGO
                 AgroScreen.LOGIN -> LoginPinScreen(
-                    onLoginSuccess = {
+                    onLoginSuccess = { userRut, _ ->
+                        if (userRut.isNotBlank()) {
+                            loggedInRut = userRut
+                        }
                         currentScreen = AgroScreen.CATALOGO
                     }
                 )
 
                 // Step 2: CATALOGO -> Selecting product navigates to RETIRO
                 AgroScreen.CATALOGO -> CatalogoScreen(
+                    userRut = loggedInRut,
+                    isOnline = isOnlineMode,
                     onSelectProduct = { product ->
                         selectedProductItem = product
                         currentScreen = AgroScreen.RETIRO
@@ -282,7 +249,6 @@ fun AgroStockMainApp() {
                     transactions = transactions,
                     isOnline = isOnlineMode,
                     onForceSync = {
-                        // Mark all pending transactions as synced
                         val updatedList = transactions.map { it.copy(isSynced = true) }
                         transactions.clear()
                         transactions.addAll(updatedList)

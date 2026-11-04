@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
@@ -29,7 +30,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,15 +59,15 @@ import com.example.agrostock.ui.theme.AgroTextPrimary
 import com.example.agrostock.ui.theme.AgroTextSecondary
 
 /**
- * Screen 1: Acceso Rápido (PIN de 6 dígitos)
+ * Screen 1: Acceso Rápido (RUT editable y PIN de 6 dígitos)
  * Matching Mockup 1 from Image 2
  */
 @Composable
 fun LoginPinScreen(
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: (rut: String, pin: String) -> Unit = { _, _ -> }
 ) {
     var rutInput by remember { mutableStateOf("14.821.903-K") }
-    var pinInput by remember { mutableStateOf("1234") } // Default pre-entered 4 digits matching mockup
+    var pinInput by remember { mutableStateOf("1234") }
 
     Column(
         modifier = Modifier
@@ -146,36 +149,31 @@ fun LoginPinScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // RUT Field
-                Surface(
+                // Editable RUT Input Field
+                OutlinedTextField(
+                    value = rutInput,
+                    onValueChange = { rutInput = it },
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AgroBorder)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = rutInput,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AgroTextPrimary
-                        )
+                        .fillMaxWidth(0.90f)
+                        .height(52.dp),
+                    placeholder = { Text("Ej: 14.821.903-K", fontSize = 14.sp, color = AgroTextMuted) },
+                    trailingIcon = {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "User RUT",
                             tint = AgroTextSecondary,
                             modifier = Modifier.size(20.dp)
                         )
-                    }
-                }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = AgroGreenPrimary,
+                        unfocusedBorderColor = AgroBorder
+                    )
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -238,7 +236,11 @@ fun LoginPinScreen(
                                         when (key) {
                                             "BORRAR" -> pinInput = ""
                                             "BACK" -> if (pinInput.isNotEmpty()) pinInput = pinInput.dropLast(1)
-                                            else -> if (pinInput.length < 6) pinInput += key
+                                            else -> {
+                                                if (pinInput.length < 6) {
+                                                    pinInput += key
+                                                }
+                                            }
                                         }
                                     }
                                 )
@@ -251,7 +253,9 @@ fun LoginPinScreen(
 
                 // ENTRAR Button
                 Button(
-                    onClick = { onLoginSuccess() },
+                    onClick = {
+                        onLoginSuccess(rutInput, pinInput)
+                    },
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
                         .height(52.dp),
