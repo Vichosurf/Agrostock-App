@@ -1,5 +1,6 @@
 package com.example.agrostock.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,18 +18,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Backspace
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -44,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,19 +62,79 @@ import com.example.agrostock.ui.theme.AgroRedControlled
 import com.example.agrostock.ui.theme.AgroTextMuted
 import com.example.agrostock.ui.theme.AgroTextPrimary
 import com.example.agrostock.ui.theme.AgroTextSecondary
+import com.example.agrostock.util.RutUtils
 
 /**
- * Screen 1: Acceso Rápido (Secuencia: 1° RUT, 2° PIN de 6 dígitos)
- * Matching Mockup 1 from Image 2
+ * Screen 1: Acceso Rápido y Registro de Cuenta (RUT Módulo 11, Email y PIN 6 dígitos)
+ * Footer texts removed as requested.
  */
 @Composable
 fun LoginPinScreen(
-    onLoginSuccess: (rut: String, pin: String) -> Unit = { _, _ -> }
+    onLoginAttempt: (rut: String, pin: String) -> Boolean = { _, _ -> true },
+    onRegisterAccount: (rut: String, email: String, pin: String) -> Boolean = { _, _, _ -> true },
+    onLoginSuccess: (rut: String) -> Unit = {}
 ) {
-    // Empty by default for new RUT and PIN
+    var isRegisterMode by remember { mutableStateOf(false) }
+
     var rutInput by remember { mutableStateOf("") }
+    var emailInput by remember { mutableStateOf("") }
     var pinInput by remember { mutableStateOf("") }
-    var showRutWarning by remember { mutableStateOf(false) }
+
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+
+    fun processLogin() {
+        errorMessage = null
+        successMessage = null
+
+        val formattedRut = RutUtils.formatRut(rutInput)
+        if (!RutUtils.isValidRut(rutInput)) {
+            errorMessage = "⚠️ RUT chileno inválido (Revise el dígito verificador)."
+            return
+        }
+
+        if (pinInput.length < 6) {
+            errorMessage = "⚠️ Ingresa el PIN completo de 6 dígitos."
+            return
+        }
+
+        val isValid = onLoginAttempt(formattedRut, pinInput)
+        if (isValid) {
+            onLoginSuccess(formattedRut)
+        } else {
+            errorMessage = "⚠️ RUT o PIN no registrado / incorrecto. Por favor crea una cuenta."
+        }
+    }
+
+    fun processRegister() {
+        errorMessage = null
+        successMessage = null
+
+        val formattedRut = RutUtils.formatRut(rutInput)
+        if (!RutUtils.isValidRut(rutInput)) {
+            errorMessage = "⚠️ RUT chileno inválido según Módulo 11."
+            return
+        }
+
+        if (emailInput.isBlank() || !emailInput.contains("@")) {
+            errorMessage = "⚠️ Ingresa un correo electrónico válido."
+            return
+        }
+
+        if (pinInput.length < 6) {
+            errorMessage = "⚠️ Ingresa un PIN de 6 dígitos para la cuenta."
+            return
+        }
+
+        val registered = onRegisterAccount(formattedRut, emailInput, pinInput)
+        if (registered) {
+            successMessage = "✅ ¡Cuenta creada exitosamente! Ya puedes ingresar."
+            isRegisterMode = false
+            pinInput = ""
+        } else {
+            errorMessage = "⚠️ Este RUT ya se encuentra registrado."
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -79,7 +144,7 @@ fun LoginPinScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Header Bar with OFFLINE badge on top right (09:41 removed)
+        // Top Header Bar with OFFLINE badge on top right
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -87,7 +152,6 @@ fun LoginPinScreen(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // OFFLINE Badge
             Surface(
                 color = AgroOfflineYellow,
                 shape = RoundedCornerShape(12.dp),
@@ -131,38 +195,61 @@ fun LoginPinScreen(
             ) {
                 // Title
                 Text(
-                    text = "INICIAR SESIÓN",
+                    text = if (isRegisterMode) "CREAR CUENTA" else "INICIAR SESIÓN",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Black,
                     color = AgroTextPrimary,
                     letterSpacing = 1.sp
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // High Definition AgroStock Logo (Image 1)
-                AgroStockLogo(logoSize = 130.dp)
+                AgroStockLogo(logoSize = 110.dp)
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Step 1: Editable RUT Input Field
+                // Status Messages
+                if (!errorMessage.isNullOrEmpty()) {
+                    Text(
+                        text = errorMessage!!,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AgroRedControlled,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 10.dp)
+                    )
+                }
+
+                if (!successMessage.isNullOrEmpty()) {
+                    Text(
+                        text = successMessage!!,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AgroGreenPrimary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 10.dp)
+                    )
+                }
+
+                // Step 1: RUT Input Field (Strict Chilean RUT Filter)
                 OutlinedTextField(
                     value = rutInput,
                     onValueChange = { input ->
-                        val clean = input.filter { it.isLetterOrDigit() || it == '-' || it == '.' }
-                        if (clean.length <= 12) {
-                            rutInput = clean
-                            if (clean.isNotBlank()) showRutWarning = false
+                        val clean = RutUtils.cleanRut(input)
+                        if (clean.length <= 9) {
+                            rutInput = if (clean.length >= 2) RutUtils.formatRut(clean) else clean
+                            errorMessage = null
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.90f)
                         .height(52.dp),
-                    placeholder = { Text("1. Ingresar RUT (ej: 12.345.678-9)", fontSize = 13.sp, color = AgroTextMuted) },
+                    placeholder = { Text("RUT (ej: 12.345.678-5)", fontSize = 13.sp, color = AgroTextMuted) },
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = "User RUT",
+                            contentDescription = "RUT",
                             tint = AgroTextSecondary,
                             modifier = Modifier.size(20.dp)
                         )
@@ -180,25 +267,60 @@ fun LoginPinScreen(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedBorderColor = AgroGreenPrimary,
-                        unfocusedBorderColor = if (showRutWarning) AgroRedControlled else AgroBorder
+                        unfocusedBorderColor = AgroBorder
                     )
                 )
 
-                if (showRutWarning) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "👉 Ingresa primero tu RUT para continuar",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AgroRedControlled
-                    )
-                }
+                Spacer(modifier = Modifier.height(10.dp))
 
-                Spacer(modifier = Modifier.height(20.dp))
+                // Step 1.5: Email Field (Only in Register Mode)
+                AnimatedVisibility(visible = isRegisterMode) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(0.90f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        OutlinedTextField(
+                            value = emailInput,
+                            onValueChange = {
+                                emailInput = it
+                                errorMessage = null
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            placeholder = { Text("Correo Electrónico (Mail)", fontSize = 13.sp, color = AgroTextMuted) },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Email,
+                                    contentDescription = "Email",
+                                    tint = AgroTextSecondary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                color = AgroTextPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = AgroTextPrimary,
+                                unfocusedTextColor = AgroTextPrimary,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = AgroGreenPrimary,
+                                unfocusedBorderColor = AgroBorder
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+                }
 
                 // Step 2: PIN Dots Indicator (Gradual filling as user types)
                 Text(
-                    text = "2. INGRESA PIN DE 6 DÍGITOS",
+                    text = if (isRegisterMode) "CREAR PIN DE 6 DÍGITOS" else "INGRESA PIN DE 6 DÍGITOS",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = AgroTextSecondary,
@@ -228,7 +350,7 @@ fun LoginPinScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // Keypad (3x4 Grid)
                 val keypadRows = listOf(
@@ -240,30 +362,26 @@ fun LoginPinScreen(
 
                 Column(
                     modifier = Modifier.fillMaxWidth(0.9f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     keypadRows.forEach { row ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             row.forEach { key ->
                                 KeypadButton(
                                     key = key,
                                     modifier = Modifier.weight(1f),
                                     onClick = {
-                                        if (rutInput.isBlank()) {
-                                            showRutWarning = true
-                                        } else {
-                                            when (key) {
-                                                "BORRAR" -> pinInput = ""
-                                                "BACK" -> if (pinInput.isNotEmpty()) pinInput = pinInput.dropLast(1)
-                                                else -> {
-                                                    if (pinInput.length < 6) {
-                                                        pinInput += key
-                                                        if (pinInput.length == 6) {
-                                                            onLoginSuccess(rutInput, pinInput)
-                                                        }
+                                        when (key) {
+                                            "BORRAR" -> pinInput = ""
+                                            "BACK" -> if (pinInput.isNotEmpty()) pinInput = pinInput.dropLast(1)
+                                            else -> {
+                                                if (pinInput.length < 6) {
+                                                    pinInput += key
+                                                    if (pinInput.length == 6 && !isRegisterMode) {
+                                                        processLogin()
                                                     }
                                                 }
                                             }
@@ -275,23 +393,16 @@ fun LoginPinScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // ENTRAR Button
+                // Action Button (ENTRAR or REGISTRAR CUENTA)
                 Button(
                     onClick = {
-                        if (rutInput.isBlank()) {
-                            showRutWarning = true
-                        } else {
-                            onLoginSuccess(
-                                rutInput,
-                                if (pinInput.isBlank()) "123456" else pinInput
-                            )
-                        }
+                        if (isRegisterMode) processRegister() else processLogin()
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
-                        .height(52.dp),
+                        .height(50.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AgroGreenPrimary)
                 ) {
@@ -300,45 +411,40 @@ fun LoginPinScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "ENTRAR",
-                            fontSize = 16.sp,
+                            text = if (isRegisterMode) "REGISTRAR CUENTA" else "ENTRAR",
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = "Enter",
+                            imageVector = if (isRegisterMode) Icons.Default.PersonAdd else Icons.Default.ArrowForward,
+                            contentDescription = "Submit",
                             tint = Color.White
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Footer security note
-                Text(
-                    text = "Autenticación segura offline con PIN de 6 dígitos",
-                    fontSize = 11.sp,
-                    color = AgroTextSecondary,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+                // Toggle between Login & Register mode
+                OutlinedButton(
+                    onClick = {
+                        isRegisterMode = !isRegisterMode
+                        errorMessage = null
+                        successMessage = null
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AgroGreenPrimary)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Lock",
-                        tint = AgroTextMuted,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Base local SQLite cifrada v2.4 AgroStock",
-                        fontSize = 10.sp,
-                        color = AgroTextMuted,
-                        textAlign = TextAlign.Center
+                        text = if (isRegisterMode) "← Volver a Iniciar Sesión" else "¿No tienes cuenta? CREAR CUENTA",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AgroGreenPrimary
                     )
                 }
             }
@@ -358,7 +464,7 @@ private fun KeypadButton(
 
     Surface(
         modifier = modifier
-            .height(54.dp)
+            .height(48.dp)
             .clip(RoundedCornerShape(10.dp))
             .clickable { onClick() },
         color = bgColor,
@@ -378,7 +484,7 @@ private fun KeypadButton(
             } else {
                 Text(
                     text = key,
-                    fontSize = if (key == "BORRAR") 11.sp else 22.sp,
+                    fontSize = if (key == "BORRAR") 11.sp else 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = textColor
                 )

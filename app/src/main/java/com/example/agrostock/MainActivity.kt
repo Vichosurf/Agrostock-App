@@ -48,6 +48,12 @@ import com.example.agrostock.ui.theme.AgroOfflineOrange
 import com.example.agrostock.ui.theme.AgroOfflineYellow
 import com.example.agrostock.ui.theme.AgrostockTheme
 
+data class UserAccount(
+    val rut: String,
+    val email: String,
+    val pin: String
+)
+
 enum class AgroScreen {
     LOGIN,
     RETIRO,
@@ -71,11 +77,20 @@ class MainActivity : ComponentActivity() {
 fun AgroStockMainApp() {
     var currentScreen by remember { mutableStateOf(AgroScreen.LOGIN) }
     var isOnlineMode by remember { mutableStateOf(false) }
-    var loggedInRut by remember { mutableStateOf("14.821.903-K") }
+    var loggedInRut by remember { mutableStateOf("") }
 
     // Selected product for withdrawal
     var selectedProductItem by remember {
         mutableStateOf<ProductItem?>(null)
+    }
+
+    // Registered user accounts store (initialized with demo accounts for convenience)
+    val registeredAccounts = remember {
+        mutableStateListOf(
+            UserAccount("12.345.678-5", "operador1@agrostock.cl", "123456"),
+            UserAccount("5.108.566-3", "operador2@agrostock.cl", "654321"),
+            UserAccount("25.691.171-K", "operador3@agrostock.cl", "112233")
+        )
     }
 
     // Dynamic list of transactions
@@ -192,12 +207,24 @@ fun AgroStockMainApp() {
                 .padding(innerPadding)
         ) {
             when (currentScreen) {
-                // Step 1: LOGIN -> Navigates to CATALOGO
+                // Step 1: LOGIN or REGISTER -> Navigates to CATALOGO upon valid login
                 AgroScreen.LOGIN -> LoginPinScreen(
-                    onLoginSuccess = { userRut, _ ->
-                        if (userRut.isNotBlank()) {
-                            loggedInRut = userRut
+                    onLoginAttempt = { rut, pin ->
+                        registeredAccounts.any { account ->
+                            account.rut.equals(rut, ignoreCase = true) && account.pin == pin
                         }
+                    },
+                    onRegisterAccount = { rut, email, pin ->
+                        val exists = registeredAccounts.any { it.rut.equals(rut, ignoreCase = true) }
+                        if (exists) {
+                            false
+                        } else {
+                            registeredAccounts.add(UserAccount(rut, email, pin))
+                            true
+                        }
+                    },
+                    onLoginSuccess = { userRut ->
+                        loggedInRut = userRut
                         currentScreen = AgroScreen.CATALOGO
                     }
                 )
