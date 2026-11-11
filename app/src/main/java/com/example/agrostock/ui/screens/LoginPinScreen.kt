@@ -66,7 +66,7 @@ import com.example.agrostock.util.RutUtils
 
 /**
  * Screen 1: Acceso Rápido y Registro de Cuenta (RUT Módulo 11, Email y PIN 6 dígitos)
- * Footer texts removed as requested.
+ * Footer texts removed as requested. Smooth RUT typing fix applied.
  */
 @Composable
 fun LoginPinScreen(
@@ -232,13 +232,13 @@ fun LoginPinScreen(
                     )
                 }
 
-                // Step 1: RUT Input Field (Strict Chilean RUT Filter)
+                // Step 1: RUT Input Field (Smooth Typing without character duplication)
                 OutlinedTextField(
                     value = rutInput,
                     onValueChange = { input ->
                         val clean = RutUtils.cleanRut(input)
                         if (clean.length <= 9) {
-                            rutInput = if (clean.length >= 2) RutUtils.formatRut(clean) else clean
+                            rutInput = if (clean.length >= 8) RutUtils.formatRut(clean) else clean
                             errorMessage = null
                         }
                     },
