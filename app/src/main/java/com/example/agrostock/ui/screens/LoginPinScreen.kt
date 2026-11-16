@@ -63,7 +63,7 @@ import com.example.agrostock.util.RutUtils
 
 /**
  * Screen 1: Acceso Rápido y Registro de Cuenta (RUT Módulo 11 y PIN 6 dígitos)
- * Fixed smooth RUT typing without cursor jumps on 8th digit.
+ * Automatic RUT formatting with max 2 dots and 1 hyphen upon completing digits/K.
  */
 @Composable
 fun LoginPinScreen(
@@ -224,13 +224,17 @@ fun LoginPinScreen(
                     )
                 }
 
-                // Step 1: RUT Input Field (100% Smooth typing without cursor jumping)
+                // Step 1: RUT Input Field (Auto formats dots and hyphen when RUT reaches 8-9 digits/K)
                 OutlinedTextField(
                     value = rutInput,
                     onValueChange = { input ->
                         val clean = RutUtils.cleanRut(input)
                         if (clean.length <= 9) {
-                            rutInput = input.filter { it.isDigit() || it == 'k' || it == 'K' || it == '-' || it == '.' }.uppercase()
+                            rutInput = if (clean.length >= 8) {
+                                RutUtils.formatRut(clean)
+                            } else {
+                                clean
+                            }
                             errorMessage = null
                         }
                     },
