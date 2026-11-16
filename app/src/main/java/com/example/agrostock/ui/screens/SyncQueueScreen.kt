@@ -19,10 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -61,7 +59,7 @@ data class OfflineTransaction(
 
 /**
  * Screen 4: Cola de Sincronización Offline & Online Sync
- * Matching Mockup 4 from Image 2
+ * Clean layout without storage/battery footer bar.
  */
 @Composable
 fun SyncQueueScreen(
@@ -278,46 +276,6 @@ fun SyncQueueScreen(
                         color = Color.White
                     )
                 }
-            }
-        }
-
-        // Footer Bar: Storage & Battery Status
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFFECEFF1)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SdCard,
-                    contentDescription = "Storage",
-                    tint = AgroTextSecondary,
-                    modifier = Modifier.size(12.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Almacenamiento local SQLite: 12 KB usados",
-                    fontSize = 10.sp,
-                    color = AgroTextSecondary
-                )
-                Text(text = "  ·  ", fontSize = 10.sp, color = AgroTextSecondary)
-                Icon(
-                    imageVector = Icons.Default.BatteryFull,
-                    contentDescription = "Battery",
-                    tint = AgroTextSecondary,
-                    modifier = Modifier.size(12.dp)
-                )
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(
-                    text = "Batería: 82%",
-                    fontSize = 10.sp,
-                    color = AgroTextSecondary
-                )
             }
         }
     }

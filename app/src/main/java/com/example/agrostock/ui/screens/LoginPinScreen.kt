@@ -1,5 +1,6 @@
 package com.example.agrostock.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -62,7 +63,7 @@ import com.example.agrostock.util.RutUtils
 
 /**
  * Screen 1: Acceso Rápido y Registro de Cuenta (RUT Módulo 11 y PIN 6 dígitos)
- * Email field removed. Smooth RUT typing applied.
+ * Fixed smooth RUT typing without cursor jumps on 8th digit.
  */
 @Composable
 fun LoginPinScreen(
@@ -121,6 +122,7 @@ fun LoginPinScreen(
             successMessage = "✅ ¡Cuenta creada exitosamente! Ya puedes ingresar."
             isRegisterMode = false
             pinInput = ""
+            rutInput = formattedRut
         } else {
             errorMessage = "⚠️ Este RUT ya se encuentra registrado."
         }
@@ -222,13 +224,13 @@ fun LoginPinScreen(
                     )
                 }
 
-                // Step 1: RUT Input Field (Smooth Typing without character duplication)
+                // Step 1: RUT Input Field (100% Smooth typing without cursor jumping)
                 OutlinedTextField(
                     value = rutInput,
                     onValueChange = { input ->
                         val clean = RutUtils.cleanRut(input)
                         if (clean.length <= 9) {
-                            rutInput = if (clean.length >= 8) RutUtils.formatRut(clean) else input.filter { it.isDigit() || it == 'k' || it == 'K' || it == '-' || it == '.' }
+                            rutInput = input.filter { it.isDigit() || it == 'k' || it == 'K' || it == '-' || it == '.' }.uppercase()
                             errorMessage = null
                         }
                     },

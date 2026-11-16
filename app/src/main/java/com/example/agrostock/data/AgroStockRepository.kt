@@ -17,11 +17,11 @@ class AgroStockRepository(context: Context) {
     // --- AUTHENTICATION & USERS ---
 
     fun registerAccount(rut: String, pin: String): Boolean {
-        if (dbHelper.userExists(rut)) {
+        if (dbHelper.usuarioExists(rut)) {
             return false
         }
         val newUser = UserAccount(rut = rut, pin = pin)
-        val insertedInDb = dbHelper.insertUser(newUser)
+        val insertedInDb = dbHelper.insertUsuario(newUser)
         if (insertedInDb) {
             apiService.registerUserAccount(newUser)
         }
@@ -29,13 +29,13 @@ class AgroStockRepository(context: Context) {
     }
 
     fun authenticateUser(rut: String, pin: String): Boolean {
-        return dbHelper.authenticateUser(rut, pin)
+        return dbHelper.authenticateUsuario(rut, pin)
     }
 
     // --- WITHDRAWAL TRANSACTIONS & SYNC ---
 
     fun addWithdrawal(title: String, diio: String?): OfflineTransaction {
-        val count = dbHelper.getAllWithdrawals().size
+        val count = dbHelper.getAllMovimientos().size
         val newId = "TX-2024-00${82 + count}"
         val transaction = OfflineTransaction(
             id = newId,
@@ -44,22 +44,22 @@ class AgroStockRepository(context: Context) {
             diio = diio,
             isSynced = false
         )
-        dbHelper.insertWithdrawal(transaction)
+        dbHelper.insertMovimiento(transaction, cantidad = 1, requiereDiio = !diio.isNullOrEmpty())
         return transaction
     }
 
     fun fetchAllWithdrawals(): List<OfflineTransaction> {
-        return dbHelper.getAllWithdrawals()
+        return dbHelper.getAllMovimientos()
     }
 
     fun syncPendingWithdrawals(isOnline: Boolean): Boolean {
         if (!isOnline) return false
 
-        val localList = dbHelper.getAllWithdrawals()
+        val localList = dbHelper.getAllMovimientos()
         val apiResponse = apiService.syncWithdrawalQueue(localList)
 
         if (apiResponse.success) {
-            dbHelper.markAllWithdrawalsSynced()
+            dbHelper.markAllMovimientosSynced()
             return true
         }
         return false
