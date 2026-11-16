@@ -27,19 +27,19 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.agrostock.data.AgroStockRepository
 import com.example.agrostock.ui.screens.CatalogoScreen
 import com.example.agrostock.ui.screens.LoginPinScreen
-import com.example.agrostock.ui.screens.OfflineTransaction
 import com.example.agrostock.ui.screens.ProductItem
 import com.example.agrostock.ui.screens.RetiroDiioScreen
 import com.example.agrostock.ui.screens.SyncQueueScreen
@@ -47,12 +47,6 @@ import com.example.agrostock.ui.theme.AgroGreenPrimary
 import com.example.agrostock.ui.theme.AgroOfflineOrange
 import com.example.agrostock.ui.theme.AgroOfflineYellow
 import com.example.agrostock.ui.theme.AgrostockTheme
-
-data class UserAccount(
-    val rut: String,
-    val email: String,
-    val pin: String
-)
 
 enum class AgroScreen {
     LOGIN,
@@ -75,6 +69,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AgroStockMainApp() {
+    val context = LocalContext.current
+    val repository = remember { AgroStockRepository(context) }
+
     var currentScreen by remember { mutableStateOf(AgroScreen.LOGIN) }
     var isOnlineMode by remember { mutableStateOf(false) }
     var loggedInRut by remember { mutableStateOf("") }
@@ -84,45 +81,9 @@ fun AgroStockMainApp() {
         mutableStateOf<ProductItem?>(null)
     }
 
-    // Registered user accounts store (initialized with demo accounts for convenience)
-    val registeredAccounts = remember {
-        mutableStateListOf(
-            UserAccount("12.345.678-5", "operador1@agrostock.cl", "123456"),
-            UserAccount("5.108.566-3", "operador2@agrostock.cl", "654321"),
-            UserAccount("25.691.171-K", "operador3@agrostock.cl", "112233")
-        )
-    }
-
-    // Dynamic list of transactions
-    val transactions = remember {
-        mutableStateListOf(
-            OfflineTransaction(
-                id = "TX-2024-0081",
-                title = "15 sacos de Concentrado",
-                timeLocation = "Hace 10 min · Galpón 2"
-            ),
-            OfflineTransaction(
-                id = "TX-2024-0080",
-                title = "2 fármacos (Penicilina Bov 100ml)",
-                timeLocation = "Hace 25 min · Enfermería",
-                diio = "DIIO: 123.456.789"
-            ),
-            OfflineTransaction(
-                id = "TX-2024-0079",
-                title = "50 kg Sal Mineral Bloque",
-                timeLocation = "Hace 40 min · Potrero 4"
-            ),
-            OfflineTransaction(
-                id = "TX-2024-0078",
-                title = "10 sacos Fertilizante Urea",
-                timeLocation = "Hace 1 hora · Bodega Central"
-            ),
-            OfflineTransaction(
-                id = "TX-2024-0077",
-                title = "1 frasco Ivermectina 500ml",
-                timeLocation = "Hace 2 horas · Bodega Vivero"
-            )
-        )
+    // SQLite Database backed transactions
+    var transactions by remember {
+        mutableStateOf(repository.fetchAllWithdrawals())
     }
 
     Scaffold(
@@ -207,21 +168,13 @@ fun AgroStockMainApp() {
                 .padding(innerPadding)
         ) {
             when (currentScreen) {
-                // Step 1: LOGIN or REGISTER -> Navigates to CATALOGO upon valid login
+                // Step 1: LOGIN or REGISTER (Backed by SQLite Database & API Service)
                 AgroScreen.LOGIN -> LoginPinScreen(
                     onLoginAttempt = { rut, pin ->
-                        registeredAccounts.any { account ->
-                            account.rut.equals(rut, ignoreCase = true) && account.pin == pin
-                        }
+                        repository.authenticateUser(rut, pin)
                     },
                     onRegisterAccount = { rut, email, pin ->
-                        val exists = registeredAccounts.any { it.rut.equals(rut, ignoreCase = true) }
-                        if (exists) {
-                            false
-                        } else {
-                            registeredAccounts.add(UserAccount(rut, email, pin))
-                            true
-                        }
+                        repository.registerAccount(rut, email, pin)
                     },
                     onLoginSuccess = { userRut ->
                         loggedInRut = userRut
@@ -245,7 +198,7 @@ fun AgroStockMainApp() {
                     }
                 )
 
-                // Step 3: RETIRO -> Saving movement creates record and navigates to COLA_SYNC
+                // Step 3: RETIRO -> Saving movement creates record in SQLite DB and navigates to COLA_SYNC
                 AgroScreen.RETIRO -> {
                     val rawStockString = selectedProductItem?.stock ?: "24"
                     val parsedStock = rawStockString.filter { it.isDigit() }.toIntOrNull() ?: 24
@@ -260,31 +213,20 @@ fun AgroStockMainApp() {
                             currentScreen = AgroScreen.CATALOGO
                         },
                         onSaveMovement = { _, diio, movementTitle ->
-                            val newNumber = 82 + transactions.size
-                            val newId = "TX-2024-00$newNumber"
-                            transactions.add(
-                                0,
-                                OfflineTransaction(
-                                    id = newId,
-                                    title = movementTitle,
-                                    timeLocation = "Hace un momento · Módulo Fundo",
-                                    diio = "DIIO: $diio",
-                                    isSynced = false
-                                )
-                            )
+                            repository.addWithdrawal(movementTitle, "DIIO: $diio")
+                            transactions = repository.fetchAllWithdrawals()
                             currentScreen = AgroScreen.COLA_SYNC
                         }
                     )
                 }
 
-                // Step 4: COLA_SYNC -> Displays queue and allows syncing when Online
+                // Step 4: COLA_SYNC -> Displays queue and allows syncing with REST API when Online
                 AgroScreen.COLA_SYNC -> SyncQueueScreen(
                     transactions = transactions,
                     isOnline = isOnlineMode,
                     onForceSync = {
-                        val updatedList = transactions.map { it.copy(isSynced = true) }
-                        transactions.clear()
-                        transactions.addAll(updatedList)
+                        repository.syncPendingWithdrawals(isOnlineMode)
+                        transactions = repository.fetchAllWithdrawals()
                     },
                     onBackClick = {
                         currentScreen = AgroScreen.CATALOGO
