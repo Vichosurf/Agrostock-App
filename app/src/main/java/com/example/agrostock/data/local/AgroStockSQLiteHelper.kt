@@ -20,12 +20,11 @@ class AgroStockSQLiteHelper(context: Context) : SQLiteOpenHelper(
 
     companion object {
         private const val DATABASE_NAME = "agrostock_database.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
 
         // Table Users
         private const val TABLE_USERS = "users"
         private const val COLUMN_USER_RUT = "rut"
-        private const val COLUMN_USER_EMAIL = "email"
         private const val COLUMN_USER_PIN = "pin"
 
         // Table Products
@@ -48,7 +47,6 @@ class AgroStockSQLiteHelper(context: Context) : SQLiteOpenHelper(
         val createUsersTable = """
             CREATE TABLE $TABLE_USERS (
                 $COLUMN_USER_RUT TEXT PRIMARY KEY,
-                $COLUMN_USER_EMAIL TEXT NOT NULL,
                 $COLUMN_USER_PIN TEXT NOT NULL
             )
         """.trimIndent()
@@ -92,17 +90,14 @@ class AgroStockSQLiteHelper(context: Context) : SQLiteOpenHelper(
         val users = listOf(
             ContentValues().apply {
                 put(COLUMN_USER_RUT, "12.345.678-5")
-                put(COLUMN_USER_EMAIL, "operador1@agrostock.cl")
                 put(COLUMN_USER_PIN, "123456")
             },
             ContentValues().apply {
                 put(COLUMN_USER_RUT, "5.108.566-3")
-                put(COLUMN_USER_EMAIL, "operador2@agrostock.cl")
                 put(COLUMN_USER_PIN, "654321")
             },
             ContentValues().apply {
                 put(COLUMN_USER_RUT, "25.691.171-K")
-                put(COLUMN_USER_EMAIL, "operador3@agrostock.cl")
                 put(COLUMN_USER_PIN, "112233")
             }
         )
@@ -155,10 +150,9 @@ class AgroStockSQLiteHelper(context: Context) : SQLiteOpenHelper(
         val db = writableDatabase
         val cv = ContentValues().apply {
             put(COLUMN_USER_RUT, user.rut)
-            put(COLUMN_USER_EMAIL, user.email)
             put(COLUMN_USER_PIN, user.pin)
         }
-        val result = db.insert(TABLE_USERS, null, cv)
+        val result = db.insertWithOnConflict(TABLE_USERS, null, cv, SQLiteDatabase.CONFLICT_REPLACE)
         return result != -1L
     }
 

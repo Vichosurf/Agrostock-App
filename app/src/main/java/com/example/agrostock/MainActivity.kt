@@ -173,8 +173,8 @@ fun AgroStockMainApp() {
                     onLoginAttempt = { rut, pin ->
                         repository.authenticateUser(rut, pin)
                     },
-                    onRegisterAccount = { rut, email, pin ->
-                        repository.registerAccount(rut, email, pin)
+                    onRegisterAccount = { rut, pin ->
+                        repository.registerAccount(rut, pin)
                     },
                     onLoginSuccess = { userRut ->
                         loggedInRut = userRut

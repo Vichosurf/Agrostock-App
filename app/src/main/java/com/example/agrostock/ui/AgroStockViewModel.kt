@@ -35,8 +35,8 @@ class AgroStockViewModel(application: Application) : AndroidViewModel(applicatio
         return repository.authenticateUser(rut, pin)
     }
 
-    fun registerUser(rut: String, email: String, pin: String): Boolean {
-        return repository.registerAccount(rut, email, pin)
+    fun registerUser(rut: String, pin: String): Boolean {
+        return repository.registerAccount(rut, pin)
     }
 
     fun saveWithdrawalMovement(movementTitle: String, diio: String?) {

@@ -1,6 +1,5 @@
 package com.example.agrostock.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,12 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Backspace
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.WifiOff
@@ -48,7 +45,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -65,19 +61,18 @@ import com.example.agrostock.ui.theme.AgroTextSecondary
 import com.example.agrostock.util.RutUtils
 
 /**
- * Screen 1: Acceso Rápido y Registro de Cuenta (RUT Módulo 11, Email y PIN 6 dígitos)
- * Footer texts removed as requested. Smooth RUT typing fix applied.
+ * Screen 1: Acceso Rápido y Registro de Cuenta (RUT Módulo 11 y PIN 6 dígitos)
+ * Email field removed. Smooth RUT typing applied.
  */
 @Composable
 fun LoginPinScreen(
     onLoginAttempt: (rut: String, pin: String) -> Boolean = { _, _ -> true },
-    onRegisterAccount: (rut: String, email: String, pin: String) -> Boolean = { _, _, _ -> true },
+    onRegisterAccount: (rut: String, pin: String) -> Boolean = { _, _ -> true },
     onLoginSuccess: (rut: String) -> Unit = {}
 ) {
     var isRegisterMode by remember { mutableStateOf(false) }
 
     var rutInput by remember { mutableStateOf("") }
-    var emailInput by remember { mutableStateOf("") }
     var pinInput by remember { mutableStateOf("") }
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -116,17 +111,12 @@ fun LoginPinScreen(
             return
         }
 
-        if (emailInput.isBlank() || !emailInput.contains("@")) {
-            errorMessage = "⚠️ Ingresa un correo electrónico válido."
-            return
-        }
-
         if (pinInput.length < 6) {
             errorMessage = "⚠️ Ingresa un PIN de 6 dígitos para la cuenta."
             return
         }
 
-        val registered = onRegisterAccount(formattedRut, emailInput, pinInput)
+        val registered = onRegisterAccount(formattedRut, pinInput)
         if (registered) {
             successMessage = "✅ ¡Cuenta creada exitosamente! Ya puedes ingresar."
             isRegisterMode = false
@@ -238,7 +228,7 @@ fun LoginPinScreen(
                     onValueChange = { input ->
                         val clean = RutUtils.cleanRut(input)
                         if (clean.length <= 9) {
-                            rutInput = if (clean.length >= 8) RutUtils.formatRut(clean) else clean
+                            rutInput = if (clean.length >= 8) RutUtils.formatRut(clean) else input.filter { it.isDigit() || it == 'k' || it == 'K' || it == '-' || it == '.' }
                             errorMessage = null
                         }
                     },
@@ -271,52 +261,7 @@ fun LoginPinScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Step 1.5: Email Field (Only in Register Mode)
-                AnimatedVisibility(visible = isRegisterMode) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(0.90f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        OutlinedTextField(
-                            value = emailInput,
-                            onValueChange = {
-                                emailInput = it
-                                errorMessage = null
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            placeholder = { Text("Correo Electrónico (Mail)", fontSize = 13.sp, color = AgroTextMuted) },
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Email",
-                                    tint = AgroTextSecondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            singleLine = true,
-                            textStyle = TextStyle(
-                                color = AgroTextPrimary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = AgroTextPrimary,
-                                unfocusedTextColor = AgroTextPrimary,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedBorderColor = AgroGreenPrimary,
-                                unfocusedBorderColor = AgroBorder
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-                }
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Step 2: PIN Dots Indicator (Gradual filling as user types)
                 Text(

@@ -16,11 +16,11 @@ class AgroStockRepository(context: Context) {
 
     // --- AUTHENTICATION & USERS ---
 
-    fun registerAccount(rut: String, email: String, pin: String): Boolean {
+    fun registerAccount(rut: String, pin: String): Boolean {
         if (dbHelper.userExists(rut)) {
             return false
         }
-        val newUser = UserAccount(rut = rut, email = email, pin = pin)
+        val newUser = UserAccount(rut = rut, pin = pin)
         val insertedInDb = dbHelper.insertUser(newUser)
         if (insertedInDb) {
             apiService.registerUserAccount(newUser)
