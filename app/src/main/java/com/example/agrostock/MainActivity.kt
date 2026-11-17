@@ -26,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,7 @@ import com.example.agrostock.ui.theme.AgroGreenPrimary
 import com.example.agrostock.ui.theme.AgroOfflineOrange
 import com.example.agrostock.ui.theme.AgroOfflineYellow
 import com.example.agrostock.ui.theme.AgrostockTheme
+import com.example.agrostock.util.NetworkObserver
 
 enum class AgroScreen {
     LOGIN,
@@ -73,8 +75,25 @@ fun AgroStockMainApp() {
     val repository = remember { AgroStockRepository(context) }
 
     var currentScreen by remember { mutableStateOf(AgroScreen.LOGIN) }
-    var isOnlineMode by remember { mutableStateOf(false) }
+    var isOnlineMode by remember { mutableStateOf(NetworkObserver.isNetworkConnected(context)) }
     var loggedInRut by remember { mutableStateOf("") }
+
+    // Automatic real-time network connectivity listener for Wi-Fi and Mobile Data
+    DisposableEffect(context) {
+        val callback = NetworkObserver.registerNetworkCallback(context) { isConnected ->
+            isOnlineMode = isConnected
+        }
+        onDispose {
+            if (callback != null) {
+                try {
+                    val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+                    cm?.unregisterNetworkCallback(callback)
+                } catch (e: Exception) {
+                    // Ignore on dispose
+                }
+            }
+        }
+    }
 
     // Selected product for withdrawal
     var selectedProductItem by remember {
@@ -127,7 +146,7 @@ fun AgroStockMainApp() {
                                 }
                             }
 
-                            // Online / Offline Network Switch
+                            // Online / Offline Network Switch (Auto-updated via Wi-Fi/Mobile Data + Manual Override)
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
