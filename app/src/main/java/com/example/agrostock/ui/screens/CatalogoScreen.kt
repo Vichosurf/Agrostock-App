@@ -70,7 +70,11 @@ data class ProductItem(
     val stock: String,
     val icon: ImageVector,
     val buttonText: String,
-    val buttonColor: Color
+    val buttonColor: Color,
+    val productId: Long = id.toLongOrNull() ?: 0L,
+    val stockQuantity: Int = stock.filter { it.isDigit() }.toIntOrNull() ?: 0,
+    val unit: String = "",
+    val requiresDiio: Boolean = category == "Fármacos"
 )
 
 /**
@@ -81,6 +85,7 @@ data class ProductItem(
 fun CatalogoScreen(
     userRut: String = "14.821.903-K",
     isOnline: Boolean = true,
+    products: List<ProductItem> = emptyList(),
     onSelectProduct: (ProductItem) -> Unit = {},
     onGoToWithdrawal: () -> Unit = {},
     onGoToMovements: () -> Unit = {}
@@ -88,44 +93,7 @@ fun CatalogoScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("TODOS") }
 
-    val allProducts = listOf(
-        ProductItem(
-            id = "1",
-            name = "Saco de Concentrado",
-            category = "Forrajes",
-            stock = "Stock: 124 sacos",
-            icon = Icons.Default.Grass,
-            buttonText = "FORRAJE >",
-            buttonColor = AgroGreenPrimary
-        ),
-        ProductItem(
-            id = "2",
-            name = "Sal Mineral",
-            category = "Sales",
-            stock = "Stock: 48 bloques",
-            icon = Icons.Default.Star,
-            buttonText = "SALES >",
-            buttonColor = AgroGreenPrimary
-        ),
-        ProductItem(
-            id = "3",
-            name = "Penicilina Retard",
-            category = "Fármacos",
-            stock = "Stock: 24 frascos",
-            icon = Icons.Default.LocalPharmacy,
-            buttonText = "FÁRMACOS >",
-            buttonColor = AgroGreenPrimary
-        ),
-        ProductItem(
-            id = "4",
-            name = "Fertilizante Urea",
-            category = "Fertilizantes",
-            stock = "Stock: 90 sacos",
-            icon = Icons.Default.Science,
-            buttonText = "FERTILIZANTES >",
-            buttonColor = AgroGreenPrimary
-        )
-    )
+    val allProducts = products
 
     val filteredProducts = allProducts.filter { product ->
         val matchesCategory = selectedCategory == "TODOS" || product.category.equals(selectedCategory, ignoreCase = true)

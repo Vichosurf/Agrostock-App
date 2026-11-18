@@ -74,12 +74,12 @@ fun RetiroDiioScreen(
     onBackClick: () -> Unit = {},
     onSaveMovement: (quantity: Int, diio: String, title: String) -> Unit = { _, _, _ -> }
 ) {
-    var quantity by remember { mutableIntStateOf(15) }
-    var quantityInputText by remember { mutableStateOf("15") }
+    val initialQuantity = if (maxStock > 0) minOf(15, maxStock) else 0
+    var quantity by remember(maxStock) { mutableIntStateOf(initialQuantity) }
+    var quantityInputText by remember(maxStock) { mutableStateOf(initialQuantity.toString()) }
     var showStockWarning by remember { mutableStateOf(false) }
 
-    var rawDiioDigits by remember { mutableStateOf("123456789") } // 9 digits raw input
-    var animalInfo by remember { mutableStateOf("Vaca 402 (Lactancia Activa)") }
+    var rawDiioDigits by remember { mutableStateOf("") }
 
     // Format raw digits into 3.3.3 DIIO format (e.g., 123.456.789)
     val formattedDiio = remember(rawDiioDigits) {
@@ -95,11 +95,17 @@ fun RetiroDiioScreen(
 
     // Update quantity and text synchronized
     fun updateQuantity(newValue: Int) {
-        val clamped = newValue.coerceIn(1, maxStock)
+        val maxAllowed = maxStock.coerceAtLeast(0)
+        val clamped = if (maxAllowed == 0) 0 else newValue.coerceIn(1, maxAllowed)
         quantity = clamped
         quantityInputText = clamped.toString()
-        showStockWarning = newValue > maxStock
+        showStockWarning = newValue > maxAllowed
     }
+
+    val canSave = maxStock > 0 &&
+        quantity in 1..maxStock &&
+        quantityInputText.isNotBlank() &&
+        (!isControlled || isDiioValid)
 
     Column(
         modifier = Modifier
@@ -150,7 +156,7 @@ fun RetiroDiioScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "DIIO ACTIVO",
+                            text = if (isControlled) "TRAZABILIDAD REQUERIDA" else "SIN REQUISITO DIIO",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
@@ -263,17 +269,35 @@ fun RetiroDiioScreen(
                             val cleanDigits = input.filter { it.isDigit() }
                             if (cleanDigits.isEmpty()) {
                                 quantityInputText = ""
-                                quantity = 1
+                                quantity = 0
+                                showStockWarning = false
                             } else {
-                                val typedVal = cleanDigits.toIntOrNull() ?: 1
-                                if (typedVal > maxStock) {
-                                    quantity = maxStock
-                                    quantityInputText = maxStock.toString()
-                                    showStockWarning = true
-                                } else {
-                                    quantity = maxOf(1, typedVal)
-                                    quantityInputText = cleanDigits
-                                    showStockWarning = false
+                                val typedVal = cleanDigits.toIntOrNull()
+                                when {
+                                    typedVal == null -> {
+                                        quantityInputText = ""
+                                        quantity = 0
+                                    }
+                                    maxStock <= 0 -> {
+                                        quantity = 0
+                                        quantityInputText = cleanDigits
+                                        showStockWarning = true
+                                    }
+                                    typedVal > maxStock -> {
+                                        quantity = maxStock
+                                        quantityInputText = maxStock.toString()
+                                        showStockWarning = true
+                                    }
+                                    typedVal <= 0 -> {
+                                        quantity = 0
+                                        quantityInputText = cleanDigits
+                                        showStockWarning = false
+                                    }
+                                    else -> {
+                                        quantity = typedVal
+                                        quantityInputText = cleanDigits
+                                        showStockWarning = false
+                                    }
                                 }
                             }
                         },
@@ -311,7 +335,7 @@ fun RetiroDiioScreen(
                     if (showStockWarning) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "⚠️ Límite de stock máximo alcanzado ($maxStock UDS)",
+                            text = if (maxStock <= 0) "⚠️ Producto sin stock disponible" else "⚠️ Límite de stock máximo alcanzado ($maxStock UDS)",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = AgroRedControlled,
@@ -360,7 +384,7 @@ fun RetiroDiioScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "ARETE ANIMAL (DIIO OBLIGATORIO)",
+                            text = if (isControlled) "ARETE ANIMAL (DIIO OBLIGATORIO)" else "ARETE ANIMAL (OPCIONAL)",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = AgroRedControlled,
@@ -371,7 +395,7 @@ fun RetiroDiioScreen(
                             shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
-                                text = "SAG Chile",
+                                text = "REGISTRO LOCAL",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1565C0),
@@ -455,49 +479,32 @@ fun RetiroDiioScreen(
                             }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "🐄 $animalInfo",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1B5E20)
+                                text = when {
+                                    !isControlled -> "Este insumo no requiere trazabilidad DIIO."
+                                    isDiioValid -> "DIIO con formato correcto; se verificará contra el registro local al guardar."
+                                    else -> "Ingrese los nueve dígitos del DIIO. El retiro no podrá guardarse sin un animal activo."
+                                },
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isControlled && !isDiioValid) AgroRedControlled else Color(0xFF1B5E20)
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Scanner Button
                     Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                // Simulate scanning next ear tag with 9 digits
-                                rawDiioDigits = "123456790"
-                                animalInfo = "Vaca 405 (Secado - Potrero 2)"
-                            },
-                        color = AgroDarkHeader,
-                        shape = RoundedCornerShape(8.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, AgroBorder)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.QrCodeScanner,
-                                contentDescription = "Scan",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "ESCANEAR CROTAL / CÓDIGO QR",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
+                        Text(
+                            text = "Lector de cámara/QR no conectado en esta versión. Ingrese el DIIO manualmente.",
+                            fontSize = 11.sp,
+                            color = AgroTextSecondary,
+                            modifier = Modifier.padding(12.dp)
+                        )
                     }
                 }
             }
@@ -507,14 +514,20 @@ fun RetiroDiioScreen(
             // Bottom Save Movement Button
             Button(
                 onClick = {
-                    val movementTitle = "$quantity UDS $productName"
-                    onSaveMovement(quantity, formattedDiio, movementTitle)
+                    if (canSave) {
+                        val movementTitle = "$quantity UDS $productName"
+                        onSaveMovement(quantity, if (isControlled) formattedDiio else "", movementTitle)
+                    }
                 },
+                enabled = canSave,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AgroGreenDark)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AgroGreenDark,
+                    disabledContainerColor = Color(0xFFB0BEC5)
+                )
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
