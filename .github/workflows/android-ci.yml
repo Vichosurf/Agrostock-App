@@ -1,9 +1,6 @@
 name: Android CI
 
 on:
-  push:
-    branches:
-      - fix/agrostock-functional-security-sync-tests
   pull_request:
     branches:
       - main
