@@ -17,7 +17,7 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "AGROSTOCK_API_BASE_URL", "\"\${agroStockApiBaseUrl}\"")
+        buildConfigField("String", "AGROSTOCK_API_BASE_URL", "\"${agroStockApiBaseUrl}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
