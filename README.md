@@ -24,7 +24,7 @@ Aplicación Android nativa para inventario agrícola y trazabilidad de retiros e
 
 ## Configuración del entorno
 
-1. Instalar Android Studio, Android SDK Platform 37 y JDK 25 para Gradle.
+1. Instalar Android Studio, Android SDK Platform 36 y JDK 25 para Gradle.
 2. Clonar el repositorio y abrirlo en Android Studio.
 3. Ejecutar Sync Project with Gradle Files.
 4. Para compilar el APK debug:
