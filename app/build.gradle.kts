@@ -8,13 +8,13 @@ val agroStockApiBaseUrl = providers.gradleProperty("AGROSTOCK_API_BASE_URL").orE
 android {
     namespace = "com.example.agrostock"
     compileSdk {
-        version = release(37)
+        version = release(36)
     }
 
     defaultConfig {
         applicationId = "com.example.agrostock"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         buildConfigField("String", "AGROSTOCK_API_BASE_URL", "\"${agroStockApiBaseUrl}\"")
