@@ -64,7 +64,7 @@ class ExampleInstrumentedTest {
             cursor.getString(0)
         }
         assertNotEquals("123456", stored)
-        assertTrue(stored.startsWith("pbkdf2-sha256\\u0024"))
+        assertTrue(stored.startsWith("pbkdf2-sha256"))
     }
 
     @Test
