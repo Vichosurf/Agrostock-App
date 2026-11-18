@@ -285,22 +285,52 @@ class AgroStockSQLiteHelper(context: Context) : SQLiteOpenHelper(
             null, null, null, null, null
         ).use { cursor ->
             while (cursor.moveToNext()) {
-                users += UserRow(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3))
+                users += UserRow(
+                    cursor.getString(0),
+                    cursor.getString(1),
+                    cursor.getString(2),
+                    cursor.getString(3)
+                )
             }
         }
+
         users.forEach { user ->
-            if (!PinHasher.isEncoded(user.pin)) {
-                db.update(TABLE_USUARIO,
-                    ContentValues().apply { put(C_USUARIO_PIN_HASH, PinHasher.hash(user.pin)) },
-                    "$C_USUARIO_ID = ?", arrayOf(user.id))
-            }
-            val seedUser =
+            val isDemoAccount =
                 (user.rut == "12.345.678-5" && user.name == "Operario General") ||
                 (user.rut == "5.108.566-3" && user.name == "Operario Sanitario Moncopulli")
-            if (seedUser) {
+
+            if (!PinHasher.isEncoded(user.pin)) {
+                val encodedPin = if (isDemoAccount) {
+                    val randomPin = List(6) { ('0'.code + java.security.SecureRandom().nextInt(10)).toChar() }
+                        .joinToString("")
+                    PinHasher.hash(randomPin)
+                } else {
+                    PinHasher.hash(user.pin)
+                }
+                val values = ContentValues().apply {
+                    put(C_USUARIO_PIN_HASH, encodedPin)
+                    if (isDemoAccount) put(C_USUARIO_ACTIVO, 0)
+                }
+                db.update(TABLE_USUARIO, values, "$C_USUARIO_ID = ?", arrayOf(user.id))
+            } else if (isDemoAccount) {
+                val randomPin = List(6) { ('0'.code + java.security.SecureRandom().nextInt(10)).toChar() }
+                    .joinToString("")
+                db.update(
+                    TABLE_USUARIO,
+                    ContentValues().apply {
+                        put(C_USUARIO_PIN_HASH, PinHasher.hash(randomPin))
+                        put(C_USUARIO_ACTIVO, 0)
+                    },
+                    "$C_USUARIO_ID = ?",
+                    arrayOf(user.id)
+                )
+            }
+
+            // Remove only the known seeded demo transaction. Preserve any other
+            // historical movements and the demo user row to keep foreign keys valid.
+            if (isDemoAccount) {
                 db.delete(TABLE_OUTBOX, "$C_BOX_TX_LOCAL = ?", arrayOf("TX-2024-0081"))
                 db.delete(TABLE_MOVIMIENTO, "$C_MOV_TX_LOCAL = ?", arrayOf("TX-2024-0081"))
-                db.delete(TABLE_USUARIO, "$C_USUARIO_ID = ?", arrayOf(user.id))
             }
         }
     }
