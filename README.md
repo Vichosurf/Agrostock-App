@@ -1,48 +1,68 @@
-# AgroStock App 🌾🐄
+# AgroStock App
 
-Aplicación móvil agrícola y ganadera desarrollada en **Android Native con Jetpack Compose** para el control de inventario, registro de retiros de insumos en terreno, verificación de arete animal (DIIO / SAG Chile) y gestión de cola de sincronización offline con SQLite.
+Aplicación Android nativa para inventario agrícola y trazabilidad de retiros en Agrícola Moncopulli S.A. Desarrollada con Kotlin, Jetpack Compose Material 3 y SQLite nativo.
 
----
+## Funcionalidades
 
-## 📸 Pantallas y Flujo de Trabajo
+- Acceso local con RUT y PIN de seis dígitos.
+- Validación de RUT por Módulo 11.
+- Verificación de PIN con PBKDF2-HMAC-SHA256 y sal individual.
+- Catálogo cargado desde SQLite, búsqueda y filtros por categoría.
+- Retiros con cantidad validada contra stock disponible.
+- DIIO obligatorio según la categoría y validado contra animales activos del registro local.
+- Registro transaccional de movimiento, descuento de stock y evento pendiente en sync_outbox.
+- Detección de conectividad validada y cola offline.
+- Cliente HTTP para POST /api/movimientos/sync; un evento solo se confirma con respuesta aceptada que devuelva el mismo id_transaccion_local.
 
-### 1. Acceso Rápido (PIN de 6 dígitos)
-- Autenticación segura local offline.
-- Teclado numérico interactivo 3x4 con indicador de 6 dígitos.
-- Persistencia local con SQLite cifrado.
+## Limitaciones conocidas
 
-### 2. Registro de Retiro y DIIO (Módulo Sanitario)
-- Detalle de insumo con distintivo de **Fármaco Controlado**.
-- Ajuste rápido de dosis/unidades (`-10`, `-5`, `-1`, `+1`, `+5`, `+10`).
-- Módulo de arete animal obligatorio DIIO con verificación SAG Chile y escáner QR.
+- SQLite estándar no cifra el archivo completo de la base de datos. Antes de usar datos reales debe incorporarse cifrado en reposo y gestión de claves.
+- La cámara/lectura QR no está integrada; el DIIO se ingresa manualmente.
+- La validación DIIO utiliza el maestro local, no una consulta directa al SAG.
+- La sincronización necesita un backend accesible y registros maestros de usuario, producto y animal cuyos identificadores coincidan con los que envía el dispositivo.
+- La URL del backend no está incluida en el repositorio ni contiene credenciales.
 
-### 3. Catálogo y Búsqueda (Modo Online)
-- Búsqueda e insumos en tiempo real.
-- Filtro por categorías: **Forrajes, Sales, Fármacos y Fertilizantes**.
-- Tarjetas de producto con control de stock y acciones rápidas.
+## Configuración del entorno
 
-### 4. Cola de Sincronización Offline
-- Retención local de transacciones retenidas en SQLite (`SYNC_PENDING`).
-- Forzado de sincronización condicionado por estado de red Wi-Fi.
-- Métricas en tiempo real de uso de almacenamiento y batería.
+1. Instalar Android Studio, Android SDK Platform 37 y JDK 25 para Gradle.
+2. Clonar el repositorio y abrirlo en Android Studio.
+3. Ejecutar Sync Project with Gradle Files.
+4. Para compilar el APK debug:
 
----
-
-## 🛠️ Tecnologías Utilizadas
-
-- **Kotlin** & **Jetpack Compose (Material 3)**
-- **Compose Material Icons Extended**
-- **Architecture**: Single Activity with Modular Screen Composables & State Management
-- **Custom Graphics**: Canvas Vector Graphics para el Logo oficial de AgroStock (Árbol, Manzana y Vaca)
-
----
-
-## 🚀 Instalación y Ejecución
-
-1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/Vichosurf/Agrostock-App.git
+   ./gradlew :app:assembleDebug
    ```
-2. Abrir en **Android Studio**.
-3. Sincronizar Gradle (`Sync Project with Gradle Files`).
-4. Compilar y ejecutar en un dispositivo o emulador Android.
+
+5. Para configurar el backend, entregar la URL base durante la compilación:
+
+   ```bash
+   ./gradlew :app:assembleDebug -PAGROSTOCK_API_BASE_URL=https://tu-servidor
+   ```
+
+   Para desarrollo local, HTTP se permite únicamente en 10.0.2.2, localhost o 127.0.0.1. Los entornos reales deben utilizar HTTPS.
+
+## Pruebas
+
+Pruebas unitarias:
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
+Pruebas instrumentadas con dispositivo/emulador conectado:
+
+```bash
+./gradlew :app:connectedDebugAndroidTest
+```
+
+La suite agregada cubre RUT válido/inválido, autenticación con PIN derivado, estructura de diez tablas, claves foráneas, stock, cantidad e identificación DIIO.
+
+## Arquitectura de paquetes
+
+- ui/: pantallas Compose.
+- data/: modelos y Repository.
+- data/local/: SQLiteOpenHelper, transacciones y outbox.
+- data/remote/: cliente HTTP FastAPI.
+- util/: validación RUT, PBKDF2 y conectividad.
+
+El contrato de sincronización usa id_transaccion_local como clave idempotente. El cliente marca un movimiento como procesado solo después de recibir HTTP 2xx con el mismo identificador y estado PROCESADO o YA_PROCESADO.
