@@ -26,8 +26,9 @@ object NetworkObserver {
         val isCellular = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
         val isEthernet = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
         val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        val isValidated = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 
-        return (isWifi || isCellular || isEthernet) && hasInternet
+        return (isWifi || isCellular || isEthernet) && hasInternet && isValidated
     }
 
     /**
@@ -56,6 +57,7 @@ object NetworkObserver {
 
         val request = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
