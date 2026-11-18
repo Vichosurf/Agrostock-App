@@ -5,11 +5,15 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import com.example.agrostock.data.AgroStockRepository
+import com.example.agrostock.data.SyncSummary
+import com.example.agrostock.data.InventoryProduct
 import com.example.agrostock.ui.screens.OfflineTransaction
 import com.example.agrostock.ui.screens.ProductItem
 
 /**
- * AgroStock ViewModel managing reactive application state backed by SQLite Database & API Repository.
+ * ViewModel compatible con el Repository offline-first.
+ * La UI principal aún mantiene su estado en MainActivity; este ViewModel queda
+ * preparado para una migración posterior de navegación/estado.
  */
 class AgroStockViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -31,23 +35,28 @@ class AgroStockViewModel(application: Application) : AndroidViewModel(applicatio
         transactions.addAll(repository.fetchAllWithdrawals())
     }
 
-    fun authenticateUser(rut: String, pin: String): Boolean {
-        return repository.authenticateUser(rut, pin)
+    fun loadProducts(): List<InventoryProduct> = repository.fetchProducts()
+
+    fun authenticateUser(rut: String, pin: String): Boolean =
+        repository.authenticateUser(rut, pin)
+
+    fun registerUser(rut: String, pin: String): Boolean =
+        repository.registerAccount(rut, pin)
+
+    fun saveWithdrawalMovement(
+        rut: String,
+        productId: Long,
+        quantity: Int,
+        diio: String?
+    ): OfflineTransaction {
+        val movement = repository.addWithdrawal(rut, productId, quantity, diio)
+        loadTransactionsFromDb()
+        return movement
     }
 
-    fun registerUser(rut: String, pin: String): Boolean {
-        return repository.registerAccount(rut, pin)
-    }
-
-    fun saveWithdrawalMovement(movementTitle: String, diio: String?) {
-        val newTx = repository.addWithdrawal(movementTitle, diio)
-        transactions.add(0, newTx)
-    }
-
-    fun forceSync(isOnline: Boolean) {
-        val success = repository.syncPendingWithdrawals(isOnline)
-        if (success) {
-            loadTransactionsFromDb()
-        }
+    fun forceSync(isOnline: Boolean, apiBaseUrl: String): SyncSummary {
+        val summary = repository.syncPendingWithdrawals(isOnline, apiBaseUrl)
+        if (summary.sent > 0) loadTransactionsFromDb()
+        return summary
     }
 }
