@@ -1,84 +1,60 @@
 package com.example.agrostock.data.remote
 
-import com.example.agrostock.data.UserAccount
-import com.example.agrostock.ui.screens.OfflineTransaction
-import java.util.UUID
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
- * Official FastAPI Endpoint Integration Model for AgroStock Backend.
- * Endpoint: POST /api/movimientos/sync
- * Connects with Supabase PostgreSQL and handles Offline-First idempotency & stock control.
+ * HTTP client for FastAPI POST /api/movimientos/sync.
+ * The API base URL is injected at build time (AGROSTOCK_API_BASE_URL).
+ * No event is acknowledged locally unless the server echoes the same transaction ID.
  */
-data class ApiResponse<T>(
-    val success: Boolean,
-    val message: String,
-    val data: T? = null
-)
-
-/**
- * Pydantic MovimientoCreate model matching FastAPI backend specification.
- */
-data class MovimientoCreatePayload(
-    val id_transaccion_local: String,
-    val id_usuario: String,
-    val id_producto: Int,
-    val tipo_operacion: String = "EGRESO",
-    val cantidad: Double,
-    val requiere_diio: Boolean,
-    val id_animal: String? = null,
-    val id_proveedor: Int? = null
-)
-
-/**
- * FastAPI Backend Sync Response model.
- */
-data class SyncResponse(
-    val estado: String, // 'PROCESADO' or 'YA_PROCESADO'
-    val mensaje: String,
-    val id_transaccion_local: String
-)
-
 class AgroStockApiService {
 
-    /**
-     * Transmits unsynced withdrawal transactions to the remote FastAPI endpoint /api/movimientos/sync
-     */
-    fun syncWithdrawalQueue(transactions: List<OfflineTransaction>): ApiResponse<List<SyncResponse>> {
-        val unsynced = transactions.filter { !it.isSynced }
-        val responses = unsynced.map { tx ->
-            val payload = MovimientoCreatePayload(
-                id_transaccion_local = tx.id,
-                id_usuario = UUID.randomUUID().toString(),
-                id_producto = 1,
-                tipo_operacion = "EGRESO",
-                cantidad = 1.0,
-                requiere_diio = !tx.diio.isNullOrEmpty(),
-                id_animal = if (!tx.diio.isNullOrEmpty()) UUID.randomUUID().toString() else null,
-                id_proveedor = null
-            )
+    fun syncMovement(
+        apiBaseUrl: String,
+        payloadJson: String,
+        expectedTransactionId: String
+    ): Boolean {
+        if (apiBaseUrl.isBlank()) return false
 
-            SyncResponse(
-                estado = "PROCESADO",
-                mensaje = "Movimiento ${payload.id_transaccion_local} sincronizado con éxito a FastAPI /api/movimientos/sync y stock actualizado.",
-                id_transaccion_local = payload.id_transaccion_local
-            )
+        val normalizedBase = apiBaseUrl.trim().trimEnd('/')
+        val url = URL("$normalizedBase/api/movimientos/sync")
+        val scheme = url.protocol.lowercase()
+        val localDevelopmentHost = url.host == "10.0.2.2" || url.host == "localhost" || url.host == "127.0.0.1"
+        require(scheme == "https" || (scheme == "http" && localDevelopmentHost)) {
+            "La API debe utilizar HTTPS. HTTP solo se permite para desarrollo local."
         }
 
-        return ApiResponse(
-            success = true,
-            message = "FastAPI Endpoint /api/movimientos/sync: ${responses.size} registros sincronizados con exito.",
-            data = responses
-        )
-    }
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            connectTimeout = 15_000
+            readTimeout = 20_000
+            doOutput = true
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        }
 
-    /**
-     * Simulates remote cloud backup for user accounts.
-     */
-    fun registerUserAccount(account: UserAccount): ApiResponse<String> {
-        return ApiResponse(
-            success = true,
-            message = "Usuario ${account.rut} respaldado exitosamente en la API Supabase.",
-            data = account.rut
-        )
+        return try {
+            connection.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
+                writer.write(payloadJson)
+            }
+
+            val status = connection.responseCode
+            val responseStream = if (status in 200..299) {
+                connection.inputStream
+            } else {
+                connection.errorStream
+            }
+            val responseText = responseStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            if (status !in 200..299 || responseText.isBlank()) return false
+
+            val response = JSONObject(responseText)
+            val returnedId = response.optString("id_transaccion_local")
+            val state = response.optString("estado")
+            returnedId == expectedTransactionId && (state == "PROCESADO" || state == "YA_PROCESADO")
+        } finally {
+            connection.disconnect()
+        }
     }
 }
