@@ -156,7 +156,7 @@ fun RetiroDiioScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "DIIO ACTIVO",
+                            text = if (isControlled) "TRAZABILIDAD REQUERIDA" else "SIN REQUISITO DIIO",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
@@ -278,7 +278,12 @@ fun RetiroDiioScreen(
                                         quantityInputText = ""
                                         quantity = 0
                                     }
-                                    typedVal > maxStock && maxStock > 0 -> {
+                                    maxStock <= 0 -> {
+                                        quantity = 0
+                                        quantityInputText = cleanDigits
+                                        showStockWarning = true
+                                    }
+                                    typedVal > maxStock -> {
                                         quantity = maxStock
                                         quantityInputText = maxStock.toString()
                                         showStockWarning = true
@@ -330,7 +335,7 @@ fun RetiroDiioScreen(
                     if (showStockWarning) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "⚠️ Límite de stock máximo alcanzado ($maxStock UDS)",
+                            text = if (maxStock <= 0) "⚠️ Producto sin stock disponible" else "⚠️ Límite de stock máximo alcanzado ($maxStock UDS)",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = AgroRedControlled,
@@ -390,7 +395,7 @@ fun RetiroDiioScreen(
                             shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
-                                text = "SAG Chile",
+                                text = "REGISTRO LOCAL",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1565C0),
