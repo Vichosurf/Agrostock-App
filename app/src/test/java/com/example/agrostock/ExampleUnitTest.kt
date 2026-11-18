@@ -1,17 +1,25 @@
 package com.example.agrostock
 
+import com.example.agrostock.util.RutUtils
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
-import org.junit.Assert.*
-
-/**
- * Example local unit test, which will execute on the development machine (host).
- *
- * See [testing documentation](http://d.android.com/tools/testing).
- */
 class ExampleUnitTest {
     @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
+    fun rutValidatesKnownValidRut() {
+        assertTrue(RutUtils.isValidRut("12.345.678-5"))
+    }
+
+    @Test
+    fun rutRejectsIncorrectCheckDigit() {
+        assertFalse(RutUtils.isValidRut("12.345.678-9"))
+    }
+
+    @Test
+    fun rutFormatsInputConsistently() {
+        assertEquals("12.345.678-5", RutUtils.formatRut("123456785"))
+        assertEquals("5.108.566-3", RutUtils.formatRut("51085663"))
     }
 }
